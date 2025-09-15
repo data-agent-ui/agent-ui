@@ -1,0 +1,14 @@
+# Core AI and Database
+langchain
+langchain-community
+langchain-openai
+openai
+sqlalchemy
+pandas
+python-dotenv
+pyodbc
+
+# API Server (optional)
+fastapi
+uvicorn
+python-multipart
