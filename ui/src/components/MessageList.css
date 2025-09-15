@@ -41,16 +41,16 @@
 }
 
 .message.assistant .message-content {
-  background-color: #2a2a2a;
+  /* background-color: #2a2a2a; */
   color: #e5e5e5;
-  border: 1px solid #404040;
+  /* border: 1px solid #404040; */
   border-bottom-left-radius: 4px;
 }
 
 .message.streaming .message-content {
-  background-color: #2a2a2a;
+  /* background-color: #2a2a2a; */
   color: #e5e5e5;
-  border: 1px solid #404040;
+  /* border: 1px solid #404040; */
   border-bottom-left-radius: 4px;
   position: relative;
 }
