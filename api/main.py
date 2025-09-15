@@ -9,6 +9,10 @@ import sys
 import warnings
 from datetime import datetime
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Suppress warnings for faster startup
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -18,6 +22,7 @@ warnings.filterwarnings("ignore", message=".*reflect.*")
 
 try:
     from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
     from pydantic import BaseModel
     from typing import List, Dict, Any, Optional
     import uvicorn
@@ -96,6 +101,15 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app with lifespan
 app = FastAPI(title="CRM API", version="1.0.0", lifespan=lifespan)
+
+# Add CORS middleware to allow React frontend to connect
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # React dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class Query(BaseModel):
     query: str
@@ -345,6 +359,183 @@ def should_include_table(query: str) -> bool:
     ]
     return any(keyword in query_lower for keyword in table_keywords)
 
+def is_greeting_or_small_talk(query: str) -> bool:
+    """Check if the query is a greeting or small talk"""
+    query_lower = query.lower().strip()
+    
+    # Greeting patterns
+    greetings = [
+        "hello", "hi", "hey", "good morning", "good afternoon", "good evening",
+        "how are you", "how's it going", "what's up", "greetings", "salutations"
+    ]
+    
+    # Small talk patterns
+    small_talk = [
+        "thank you", "thanks", "bye", "goodbye", "see you", "have a good day",
+        "nice to meet you", "pleasure", "you're welcome", "no problem",
+        "how can you help", "what can you do", "what are your capabilities",
+        "who are you", "what is this", "help me", "i need help"
+    ]
+    
+    # Check for exact matches or partial matches
+    for pattern in greetings + small_talk:
+        if pattern in query_lower:
+            return True
+    
+    # Check for very short queries (likely greetings)
+    if len(query_lower.split()) <= 3 and any(word in query_lower for word in ["hello", "hi", "hey", "thanks", "bye"]):
+        return True
+    
+    return False
+
+def get_greeting_response(query: str) -> str:
+    """Generate appropriate response for greetings and small talk"""
+    query_lower = query.lower().strip()
+    
+    # Time-based greetings
+    from datetime import datetime
+    current_hour = datetime.now().hour
+    
+    # Good morning responses (5 AM - 12 PM)
+    if "good morning" in query_lower or ("morning" in query_lower and "good" in query_lower):
+        responses = [
+            "Good morning. I'm your AI CRM assistant for MumsAndBabies4SUTD. I can help you analyze your business data and generate reports.",
+            "Morning. I'm here to assist with your business performance analysis. I can help you with sales reports, customer analysis, and more.",
+            "Good morning. I'm your CRM data analysis assistant. How can I help you today?"
+        ]
+        return responses[hash(query) % len(responses)]
+    
+    # Good afternoon responses (12 PM - 5 PM)
+    elif "good afternoon" in query_lower or ("afternoon" in query_lower and "good" in query_lower):
+        responses = [
+            "Good afternoon. I'm your AI CRM assistant. I can help you with business insights and data analysis.",
+            "Afternoon. I can assist you with sales analysis, customer reports, and performance metrics.",
+            "Good afternoon. I'm here to help you analyze your MumsAndBabies4SUTD data. What can I help you with?"
+        ]
+        return responses[hash(query) % len(responses)]
+    
+    # Good evening responses (5 PM - 10 PM)
+    elif "good evening" in query_lower or ("evening" in query_lower and "good" in query_lower):
+        responses = [
+            "Good evening. I'm your AI CRM assistant, ready to help you with business insights and data analysis.",
+            "Evening. I can help you review your day's performance with sales summaries and customer analysis.",
+            "Good evening. I'm here to help you with your CRM data analysis. How can I assist you?"
+        ]
+        return responses[hash(query) % len(responses)]
+    
+    # How are you responses
+    elif "how are you" in query_lower or "how's it going" in query_lower or "what's up" in query_lower:
+        responses = [
+            "I'm functioning well, thank you. I'm ready to help you analyze your business data. How can I assist you today?",
+            "I'm operating normally. I'm here to help with CRM analysis and can assist you with sales reports and customer insights.",
+            "I'm working properly. I can help you analyze your business data and provide insights. What would you like to explore?",
+            "I'm functioning correctly. I can help you understand your CRM system data. What would you like to know?"
+        ]
+        return responses[hash(query) % len(responses)]
+    
+    # Simple hello/hi responses
+    elif any(word in query_lower for word in ["hello", "hi", "hey"]):
+        responses = [
+            "Hello. I'm your AI CRM assistant for MumsAndBabies4SUTD. I can help you with business data analysis and reports.",
+            "Hi. I specialize in analyzing retail data and generating business reports. What would you like to explore?",
+            "Hello. I'm your business intelligence assistant. I can help you with customer analysis, sales reports, and performance metrics.",
+            "Hi there. I'm here to help you analyze your business data. I can assist with sales, customers, and performance analysis.",
+            "Hello. I'm your AI CRM assistant, ready to help you with data analysis from your MumsAndBabies4SUTD system."
+        ]
+        return responses[hash(query) % len(responses)]
+
+    # Help requests
+    elif any(word in query_lower for word in ["help", "what can you do", "capabilities", "who are you"]):
+        help_responses = [
+            """I'm your AI CRM Assistant.
+
+My Capabilities:
+- Business Reports: Generate comprehensive reports on sales, customers, and performance
+- Data Analysis: Analyze trends, patterns, and insights from your retail data
+- Quick Queries: Get instant answers to common business questions
+- Custom Analysis: Create tailored reports based on your specific needs
+
+Sample Questions:
+- "Show me outlet performance"
+- "List all customers with outstanding amounts"
+- "Generate a payment summary report"
+
+
+Ask me anything about your business data.""",
+            
+            """I'm your business intelligence assistant.
+
+What I can do for you:
+- Sales Analysis: Track performance, trends, and opportunities
+- Customer Insights: Understand your customer base and behavior
+- Performance Metrics: Monitor outlets, staff, and product performance
+- Business Intelligence: Get actionable insights from your data
+
+Try asking:
+- "Show me today's sales performance"
+- "Which customers have outstanding payments?"
+- "What are our top performing outlets?"
+- "Generate a comprehensive business report"
+
+I'm here to help you analyze your data.""",
+            
+            """I'm your AI-powered CRM specialist.
+
+My Expertise:
+- Data Mining: Extract valuable insights from your retail database
+- Report Generation: Create detailed business reports instantly
+- Trend Analysis: Identify patterns and opportunities in your data
+- Performance Tracking: Monitor sales, customers, and operations
+
+Quick Start:
+- "Show me outlet performance" - Get outlet analytics
+- "Customer analysis" - Understand your customer base
+- "Payment summary" - Review payment trends
+- "Top products" - See what's selling best
+
+Ready to explore your data."""
+        ]
+        return help_responses[hash(query) % len(help_responses)]
+
+    # Thank you responses
+    elif any(word in query_lower for word in ["thank", "thanks"]):
+        thank_responses = [
+            "You're welcome. I'm here whenever you need help with your CRM data analysis. Feel free to ask me about sales reports, customer insights, or performance metrics. Is there anything else I can help you with?",
+            "My pleasure. I can help you make sense of your business data. Don't hesitate to reach out if you need more insights or reports. What else can I assist you with?",
+            "You're welcome. I'm here to help with your business analytics. Feel free to ask me anything about your sales, customers, or performance data.",
+            "Happy to help. I'm here to make your data analysis easier. If you need any more reports or insights, just let me know. What would you like to explore next?"
+        ]
+        return thank_responses[hash(query) % len(thank_responses)]
+
+    # Goodbye responses
+    elif any(word in query_lower for word in ["bye", "goodbye", "see you", "have a good day"]):
+        goodbye_responses = [
+            "Goodbye. Thanks for using the AI CRM Assistant. Come back anytime you need help with your business data analysis. Have a good day.",
+            "See you later. It was good helping you today. I'm always here when you need business insights. Take care.",
+            "Farewell. Thanks for letting me help with your CRM analysis. I'll be here whenever you need me. Have a good day.",
+            "Goodbye for now. I enjoyed helping you with your business data. Come back anytime for more insights and reports."
+        ]
+        return goodbye_responses[hash(query) % len(goodbye_responses)]
+
+    # Default response
+    else:
+        return """Hello.
+
+I'm your AI CRM Assistant for MumsAndBabies4SUTD. I specialize in helping you analyze your business data and generate reports.
+
+What I can do:
+- Answer questions about your customers, sales, and performance
+- Generate comprehensive business reports
+- Provide insights and analytics
+- Help with data analysis
+
+Try asking:
+- "Show me outlet performance"
+- "Generate a customer analysis report"
+- "What are the top selling products?"
+
+How can I assist you today?"""
+
 @app.post("/query", response_model=Response)
 async def process_query(query: Query):
     """Process questions and generate reports"""
@@ -361,7 +552,16 @@ async def process_query(query: Query):
     columns = None
     
     try:
-        # Check for hardcoded queries first
+        # Check for greetings and small talk first
+        if is_greeting_or_small_talk(query.query):
+            return Response(
+                success=True,
+                query=query.query,
+                result=get_greeting_response(query.query),
+                timestamp=datetime.now().isoformat()
+            )
+        
+        # Check for hardcoded queries
         hardcoded_sql = get_hardcoded_query(query.query)
         
         if hardcoded_sql:
