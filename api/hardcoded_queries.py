@@ -40,60 +40,23 @@ HARDCODED_SQL_QUERIES = {
     
     # Transaction/Collection queries
     "generate a comprehensive collection report by payment type": """
-    SELECT TOP 50
-        p.ItemSIte_Code AS Outlet,
-        p.pay_Desc AS Payment_Type,
-        COUNT(DISTINCT p.sa_transacno) AS Num_Transactions,
-        SUM(CASE WHEN h.sa_transacno_type = 'New Sale' THEN 1 ELSE 0 END) AS Num_New_Sales,
-        SUM(CASE WHEN h.sa_transacno_type = 'Balance Payment' THEN 1 ELSE 0 END) AS Num_Balance_Payments,
-        SUM(CASE WHEN h.sa_transacno_type = 'New Sale' THEN p.pay_actamt ELSE 0 END) AS New_Sales_Amount,
-        SUM(CASE WHEN h.sa_transacno_type = 'Balance Payment' THEN p.pay_actamt ELSE 0 END) AS Balance_Paid_Amount,
-        SUM(p.pay_actamt) AS Total_Amount,
-        SUM(ISNULL(p.pay_GST, 0)) AS Tax_Collected,
-        SUM(p.pay_actamt - ISNULL(p.pay_GST, 0)) AS Net_Amount
-    FROM dbo.pos_taud p
-    INNER JOIN dbo.pos_haud h ON p.sa_transacno = h.sa_transacno
-    GROUP BY p.ItemSIte_Code, p.pay_Desc
-    ORDER BY p.ItemSIte_Code, Total_Amount DESC;
+    SELECT 
+        t.pay_type,
+        t.pay_desc,
+        COUNT(DISTINCT t.sa_transacno) AS Num_Transactions,
+        SUM(t.pay_actamt) AS Total_Collected,
+        SUM(ISNULL(t.Pay_GST_Amt_Collect, 0)) AS Total_Tax,
+        SUM(t.pay_actamt - ISNULL(t.Pay_GST_Amt_Collect, 0)) AS Net_Receivables,
+        AVG(t.pay_actamt) AS Avg_Transaction_Value
+    FROM dbo.pos_taud t
+    INNER JOIN dbo.pos_haud h 
+        ON t.sa_transacno = h.sa_transacno
+    WHERE h.IsVoid = 0  -- ignore void transactions
+    GROUP BY t.pay_type, t.pay_desc
+    ORDER BY Total_Collected DESC;
     """,
     
-    "generates a payment summary report grouped by outlet and payment type": """
-    SELECT TOP 50
-        p.ItemSIte_Code AS Outlet,
-        p.pay_Desc AS Payment_Type,
-        COUNT(DISTINCT p.sa_transacno) AS Num_Payments,
-        SUM(CASE WHEN h.sa_transacno_type = 'New Sale' THEN 1 ELSE 0 END) AS Num_New_Sales,
-        SUM(CASE WHEN h.sa_transacno_type = 'Balance Payment' THEN 1 ELSE 0 END) AS Num_Bal_Payments,
-        SUM(CASE WHEN h.sa_transacno_type = 'New Sale' THEN p.pay_actamt ELSE 0 END) AS New_Sales_Amt,
-        SUM(CASE WHEN h.sa_transacno_type = 'Balance Payment' THEN p.pay_actamt ELSE 0 END) AS Bal_Paid_Amt,
-        SUM(p.pay_actamt) AS Total_Amt,
-        SUM(ISNULL(p.Pay_GST_Amt_Collect, 0)) AS Taxes,
-        0 AS Bank_Charges,
-        SUM(p.pay_actamt - ISNULL(p.Pay_GST_Amt_Collect, 0)) AS Receivables
-    FROM dbo.pos_taud p
-    JOIN dbo.pos_haud h ON p.sa_transacno = h.sa_transacno
-    GROUP BY p.ItemSIte_Code, p.pay_Desc
-    ORDER BY p.ItemSIte_Code, p.pay_Desc;
-    """,
     
-    "payment summary report": """
-    SELECT TOP 50
-        p.ItemSIte_Code AS Outlet,
-        p.pay_Desc AS Payment_Type,
-        COUNT(DISTINCT p.sa_transacno) AS Num_Payments,
-        SUM(CASE WHEN h.sa_transacno_type = 'New Sale' THEN 1 ELSE 0 END) AS Num_New_Sales,
-        SUM(CASE WHEN h.sa_transacno_type = 'Balance Payment' THEN 1 ELSE 0 END) AS Num_Bal_Payments,
-        SUM(CASE WHEN h.sa_transacno_type = 'New Sale' THEN p.pay_actamt ELSE 0 END) AS New_Sales_Amt,
-        SUM(CASE WHEN h.sa_transacno_type = 'Balance Payment' THEN p.pay_actamt ELSE 0 END) AS Bal_Paid_Amt,
-        SUM(p.pay_actamt) AS Total_Amt,
-        SUM(ISNULL(p.Pay_GST_Amt_Collect, 0)) AS Taxes,
-        0 AS Bank_Charges,
-        SUM(p.pay_actamt - ISNULL(p.Pay_GST_Amt_Collect, 0)) AS Receivables
-    FROM dbo.pos_taud p
-    JOIN dbo.pos_haud h ON p.sa_transacno = h.sa_transacno
-    GROUP BY p.ItemSIte_Code, p.pay_Desc
-    ORDER BY p.ItemSIte_Code, p.pay_Desc;
-    """,
    ###test 
     "list all invoices their total amount and how much has been paid by payment type": """
     SELECT TOP 50
@@ -461,10 +424,10 @@ def get_hardcoded_query(user_query):
         
         # Check if we got a valid match
         if matched_query in HARDCODED_SQL_QUERIES:
-            print(f"🤖 LLM matched query: '{user_query}' → '{matched_query}'")
+            print(f"LLM matched query: '{user_query}' → '{matched_query}'")
             return HARDCODED_SQL_QUERIES[matched_query]
         else:
-            print(f"🤖 LLM found no match for: '{user_query}'")
+            print(f"LLM found no match for: '{user_query}'")
             return None
             
     except Exception as e:

@@ -172,12 +172,12 @@ def convert_db_results_to_table(result_text: str, query: str) -> Optional[TableD
                     formatted_row = []
                     for i, value in enumerate(row):
                         if i < len(columns):
-                            # Try to format numeric values
+                            # Try to format numeric values with decimal formatting
                             try:
                                 if isinstance(value, (int, float)):
-                                    formatted_row.append(value)
+                                    formatted_row.append(format_decimal_value(value))
                                 elif isinstance(value, str) and value.replace('.', '').replace('-', '').isdigit():
-                                    formatted_row.append(float(value))
+                                    formatted_row.append(format_decimal_value(float(value)))
                                 else:
                                     formatted_row.append(value)
                             except:
@@ -186,10 +186,13 @@ def convert_db_results_to_table(result_text: str, query: str) -> Optional[TableD
                             formatted_row.append(value)
                     formatted_results.append(formatted_row)
                 
+                # Filter out zero-value columns
+                filtered_results, filtered_columns = filter_zero_columns(formatted_results, columns)
+                
                 # Convert to table format - ensure all values are strings
-                headers = columns
+                headers = filtered_columns
                 rows = []
-                for row in formatted_results:
+                for row in filtered_results:
                     # Convert all values to strings for Pydantic compatibility
                     string_row = [str(value) for value in row]
                     rows.append(string_row)
@@ -644,6 +647,176 @@ def extract_payment_type_from_query(user_query: str) -> str:
     print(f"⚠️ No payment type found in query: '{user_query}'")
     return None
 
+def format_decimal_value(value):
+    """Format decimal values to 2 decimal places"""
+    if isinstance(value, float):
+        return round(value, 2)
+    elif isinstance(value, int):
+        return value
+    else:
+        return value
+
+def filter_zero_columns(rows, columns):
+    """Filter out columns that contain ONLY zero values (all rows must be zero)"""
+    if not rows or not columns:
+        return rows, columns
+    
+    # Check which columns have ALL zero values
+    zero_columns = set()
+    
+    for col_idx, column in enumerate(columns):
+        all_zero = True
+        non_zero_count = 0
+        total_count = 0
+        
+        for row in rows:
+            if col_idx < len(row):
+                value = row[column] if isinstance(row, dict) else row[col_idx]
+                total_count += 1
+                
+                # Check if value is zero (numeric zero or string "0")
+                if isinstance(value, (int, float)):
+                    if value != 0:
+                        all_zero = False
+                        non_zero_count += 1
+                elif isinstance(value, str):
+                    try:
+                        if float(value) != 0:
+                            all_zero = False
+                            non_zero_count += 1
+                    except:
+                        # Non-numeric string, keep the column
+                        all_zero = False
+                        non_zero_count += 1
+                else:
+                    # Non-numeric value, keep the column
+                    all_zero = False
+                    non_zero_count += 1
+        
+        # Only filter if ALL values are zero (no non-zero values found)
+        if all_zero and total_count > 0:
+            zero_columns.add(column)
+            print(f"🚫 Column '{column}': All {total_count} values are zero - filtering out")
+        elif non_zero_count > 0:
+            print(f"✅ Column '{column}': {non_zero_count}/{total_count} non-zero values - keeping column")
+    
+    # Filter out zero columns
+    if zero_columns:
+        print(f"🚫 Filtering out columns with ALL zero values: {', '.join(zero_columns)}")
+        
+        # Filter columns list
+        filtered_columns = [col for col in columns if col not in zero_columns]
+        
+        # Filter rows
+        filtered_rows = []
+        for row in rows:
+            if isinstance(row, dict):
+                # Dictionary row
+                filtered_row = {k: v for k, v in row.items() if k not in zero_columns}
+                filtered_rows.append(filtered_row)
+            else:
+                # List row
+                filtered_row = []
+                for i, value in enumerate(row):
+                    if i < len(columns) and columns[i] not in zero_columns:
+                        filtered_row.append(value)
+                filtered_rows.append(filtered_row)
+        
+        return filtered_rows, filtered_columns
+    else:
+        print(f"✅ No columns with ALL zero values found - keeping all columns")
+    
+    return rows, columns
+
+def fast_process_database_result(result, sql_query, query_text):
+    """Fast processing of database results with minimal overhead and decimal formatting"""
+    import time
+    start_time = time.time()
+    
+    try:
+        # Quick type check and direct processing
+        if isinstance(result, list) and len(result) > 0:
+            # Get column names from SQL
+            columns = extract_column_names_from_sql(sql_query)
+            
+            # Fast column fallback for known queries
+            if not columns:
+                if "comprehensive collection report" in query_text.lower():
+                    columns = ["pay_type", "pay_desc", "Num_Transactions", "Total_Collected", "Total_Tax", "Net_Receivables", "Avg_Transaction_Value"]
+                elif "payment summary" in query_text.lower():
+                    columns = ["Outlet", "Payment_Type", "Num_Payments", "Num_New_Sales", "Num_Bal_Payments", "New_Sales_Amt", "Bal_Paid_Amt", "Total_Amt", "Taxes", "Bank_Charges", "Receivables"]
+                elif "outlet performance" in query_text.lower():
+                    columns = ["Outlet", "Num_Transactions", "Total_Revenue", "Average_Transaction_Value", "Unique_Customers", "First_Transaction", "Latest_Transaction"]
+                elif "customer analysis" in query_text.lower():
+                    columns = ["Cust_No", "Cust_code", "Cust_name", "Cust_phone1", "Cust_email", "Outlet", "Cust_JoinDate", "oustanding_payment", "Outstanding_Amount", "Cust_Point", "Loyalty_Points", "Status"]
+                elif any(word in query_text.lower() for word in ["transactions from last", "monthly", "quarterly", "yearly", "recent"]):
+                    columns = ["sa_transacno", "sa_date", "sa_custname", "sa_totamt", "sa_totdisc", "sa_totgst", "sa_status", "Outlet"]
+                else:
+                    # Dynamic column generation based on first row
+                    if len(result) > 0:
+                        columns = [f"Column_{i+1}" for i in range(len(result[0]))]
+                    else:
+                        columns = ["No_Data"]
+            
+            # Fast row processing with decimal formatting
+            rows = []
+            for row_tuple in result:
+                row_dict = {}
+                for i, value in enumerate(row_tuple):
+                    if i < len(columns):
+                        # Format decimal values to 2 decimal places
+                        formatted_value = format_decimal_value(value)
+                        
+                        # Fast datetime conversion
+                        if hasattr(formatted_value, 'isoformat'):
+                            row_dict[columns[i]] = formatted_value.isoformat()
+                        else:
+                            row_dict[columns[i]] = formatted_value
+                rows.append(row_dict)
+            
+            # Filter out zero-value columns
+            filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
+            
+            # Generate result text
+            result_text = f"Report completed successfully\n\n"
+            result_text += f"SQL Query Used:\n{sql_query}\n\n"
+            result_text += f"Total Records: {len(filtered_rows)}\n"
+            result_text += f"Columns: {', '.join(filtered_columns)}"
+            
+            processing_time = time.time() - start_time
+            print(f"⚡ Fast processing time: {processing_time:.3f} seconds")
+            
+            return {
+                'success': True,
+                'result_text': result_text,
+                'parsed_results': filtered_rows,
+                'columns': filtered_columns,
+                'include_table': True
+            }
+        
+        else:
+            # Handle empty or non-list results
+            result_text = f"Report completed - No data found\n\nSQL Query Used:\n{sql_query}\n\n"
+            return {
+                'success': True,
+                'result_text': result_text,
+                'parsed_results': [],
+                'columns': [],
+                'include_table': False
+            }
+            
+    except Exception as e:
+        processing_time = time.time() - start_time
+        print(f"❌ Fast processing error after {processing_time:.3f}s: {e}")
+        result_text = f"Error processing results: {str(e)}\n\nSQL Query Used:\n{sql_query}"
+        return {
+            'success': False,
+            'result_text': result_text,
+            'parsed_results': None,
+            'columns': None,
+            'include_table': False
+        }
+
 
 @app.post("/query", response_model=Response)
 async def process_query(query: Query):
@@ -730,19 +903,25 @@ async def process_query(query: Query):
                         row_dict = {}
                         for i, value in enumerate(row_tuple):
                             if i < len(columns):
+                                # Format decimal values to 2 decimal places
+                                formatted_value = format_decimal_value(value)
+                                
                                 # Convert datetime objects to strings
-                                if hasattr(value, 'isoformat'):
-                                    row_dict[columns[i]] = value.isoformat()
+                                if hasattr(formatted_value, 'isoformat'):
+                                    row_dict[columns[i]] = formatted_value.isoformat()
                                 else:
-                                    row_dict[columns[i]] = value
+                                    row_dict[columns[i]] = formatted_value
                         rows.append(row_dict)
+                    
+                    # Filter out zero-value columns
+                    filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
                     
                     result_text = f"Report completed successfully\n\n"
                     result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
-                    result_text += f"Total Records: {len(rows)}\n"
-                    result_text += f"Columns: {', '.join(columns)}"
+                    result_text += f"Total Records: {len(filtered_rows)}\n"
+                    result_text += f"Columns: {', '.join(filtered_columns)}"
                     include_table = True
-                    parsed_results = rows
+                    parsed_results = filtered_rows
                     
                 else:
                     # Try to parse the string representation
@@ -760,15 +939,20 @@ async def process_query(query: Query):
                                 row_dict = {}
                                 for i, value in enumerate(row_tuple):
                                     if i < len(columns):
-                                        row_dict[columns[i]] = value
+                                        # Format decimal values to 2 decimal places
+                                        formatted_value = format_decimal_value(value)
+                                        row_dict[columns[i]] = formatted_value
                                 rows.append(row_dict)
+                            
+                            # Filter out zero-value columns
+                            filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
                             
                             result_text = f"Report completed successfully\n\n"
                             result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
-                            result_text += f"Total Records: {len(rows)}\n"
-                            result_text += f"Columns: {', '.join(columns)}"
+                            result_text += f"Total Records: {len(filtered_rows)}\n"
+                            result_text += f"Columns: {', '.join(filtered_columns)}"
                             include_table = True
-                            parsed_results = rows
+                            parsed_results = filtered_rows
                             
                         else:
                             # Try to parse the string representation with datetime handling
@@ -810,15 +994,20 @@ async def process_query(query: Query):
                                     row_dict = {}
                                     for i, value in enumerate(row_tuple):
                                         if i < len(columns):
-                                            row_dict[columns[i]] = value
+                                            # Format decimal values to 2 decimal places
+                                            formatted_value = format_decimal_value(value)
+                                            row_dict[columns[i]] = formatted_value
                                     rows.append(row_dict)
+                                
+                                # Filter out zero-value columns
+                                filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
                                 
                                 result_text = f"Report completed successfully\n\n"
                                 result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
-                                result_text += f"Total Records: {len(rows)}\n"
-                                result_text += f"Columns: {', '.join(columns)}"
+                                result_text += f"Total Records: {len(filtered_rows)}\n"
+                                result_text += f"Columns: {', '.join(filtered_columns)}"
                                 include_table = True
-                                parsed_results = rows
+                                parsed_results = filtered_rows
                                 
                             except Exception as parse_error:
                                 print(f"DEBUG: Parse error: {parse_error}")
