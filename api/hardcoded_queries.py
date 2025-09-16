@@ -158,7 +158,7 @@ HARDCODED_SQL_QUERIES = {
     # Period-based transaction queries
     "show me transactions from last month": """
     DECLARE @Period VARCHAR(20) = 'last_month';
-    
+
     WITH LatestDate AS (
         SELECT MAX(sa_date) AS MaxDate
         FROM dbo.pos_haud
@@ -171,18 +171,18 @@ HARDCODED_SQL_QUERIES = {
         h.sa_totdisc,
         h.sa_totgst,
         h.sa_status,
-        h.ItemSIte_Code AS Outlet
+        h.ItemSite_Code AS Outlet
     FROM dbo.pos_haud h
     CROSS JOIN LatestDate ld
     WHERE 
-        YEAR(h.sa_date) = YEAR(ld.MaxDate)
-        AND MONTH(h.sa_date) = MONTH(ld.MaxDate)
+        YEAR(h.sa_date) = YEAR(DATEADD(MONTH, -1, ld.MaxDate))
+        AND MONTH(h.sa_date) = MONTH(DATEADD(MONTH, -1, ld.MaxDate))
     ORDER BY h.sa_date DESC;
     """,
-    
+
     "show me transactions from last quarter": """
     DECLARE @Period VARCHAR(20) = 'last_quarter';
-    
+
     WITH LatestDate AS (
         SELECT MAX(sa_date) AS MaxDate
         FROM dbo.pos_haud
@@ -195,18 +195,18 @@ HARDCODED_SQL_QUERIES = {
         h.sa_totdisc,
         h.sa_totgst,
         h.sa_status,
-        h.ItemSIte_Code AS Outlet
+        h.ItemSite_Code AS Outlet
     FROM dbo.pos_haud h
     CROSS JOIN LatestDate ld
     WHERE 
-        DATEPART(QUARTER, h.sa_date) = DATEPART(QUARTER, ld.MaxDate)
-        AND YEAR(h.sa_date) = YEAR(ld.MaxDate)
+        DATEPART(QUARTER, h.sa_date) = DATEPART(QUARTER, DATEADD(QUARTER, -1, ld.MaxDate))
+        AND YEAR(h.sa_date) = YEAR(DATEADD(QUARTER, -1, ld.MaxDate))
     ORDER BY h.sa_date DESC;
     """,
-    
+
     "show me transactions from last year": """
     DECLARE @Period VARCHAR(20) = 'last_year';
-    
+
     WITH LatestDate AS (
         SELECT MAX(sa_date) AS MaxDate
         FROM dbo.pos_haud
@@ -219,17 +219,16 @@ HARDCODED_SQL_QUERIES = {
         h.sa_totdisc,
         h.sa_totgst,
         h.sa_status,
-        h.ItemSIte_Code AS Outlet
+        h.ItemSite_Code AS Outlet
     FROM dbo.pos_haud h
     CROSS JOIN LatestDate ld
-    WHERE 
-        YEAR(h.sa_date) = YEAR(ld.MaxDate)
+    WHERE YEAR(h.sa_date) = YEAR(DATEADD(YEAR, -1, ld.MaxDate))
     ORDER BY h.sa_date DESC;
     """,
-    
+
     "show me transactions from last 15 days": """
     DECLARE @Period VARCHAR(20) = 'last_15_days';
-    
+
     WITH LatestDate AS (
         SELECT MAX(sa_date) AS MaxDate
         FROM dbo.pos_haud
@@ -242,7 +241,7 @@ HARDCODED_SQL_QUERIES = {
         h.sa_totdisc,
         h.sa_totgst,
         h.sa_status,
-        h.ItemSIte_Code AS Outlet
+        h.ItemSite_Code AS Outlet
     FROM dbo.pos_haud h
     CROSS JOIN LatestDate ld
     WHERE 
@@ -250,10 +249,10 @@ HARDCODED_SQL_QUERIES = {
         AND h.sa_date <= ld.MaxDate
     ORDER BY h.sa_date DESC;
     """,
-    
+
     "show me recent transactions": """
-    DECLARE @Period VARCHAR(20) = 'last_15_days';
-    
+    DECLARE @Period VARCHAR(20) = 'recent';
+
     WITH LatestDate AS (
         SELECT MAX(sa_date) AS MaxDate
         FROM dbo.pos_haud
@@ -266,7 +265,7 @@ HARDCODED_SQL_QUERIES = {
         h.sa_totdisc,
         h.sa_totgst,
         h.sa_status,
-        h.ItemSIte_Code AS Outlet
+        h.ItemSite_Code AS Outlet
     FROM dbo.pos_haud h
     CROSS JOIN LatestDate ld
     WHERE 
@@ -274,7 +273,7 @@ HARDCODED_SQL_QUERIES = {
         AND h.sa_date <= ld.MaxDate
     ORDER BY h.sa_date DESC;
     """,
-    
+
     # Payment type specific queries
     "show me all transactions made through VISA": """
     SELECT 
