@@ -94,7 +94,7 @@ class SmartQueryAgent:
     def _create_context_analysis_chain(self):
         """Create context analysis chain"""
         template = """
-        You are a query analysis expert for MumsAndBabies4SUTD CRM system. Analyze the user's query and extract key information.
+        You are a query analysis expert for MumsAndBabies4SUTD transaction system. Analyze the user's query and extract key information.
         
         User Query: {query}
         Conversation History: {chat_history}
@@ -136,27 +136,23 @@ class SmartQueryAgent:
         Key Relationships:
         - pos_haud.sa_transacno = pos_daud.sa_transacno = pos_taud.sa_transacno
         - For payment analysis: Use pos_taud table
-        - For product analysis: Use pos_daud table
         - For transaction summary: Use pos_haud table
         
         Analyze and extract:
         1. Query Intent (what the user wants to know)
         2. Payment Types Mentioned (VISA, MasterCard, Cash, etc.)
         3. Time Context (specific dates, periods, relative time)
-        4. Outlet Context (specific outlets or all)
-        5. Query Type (payment analysis, product analysis, transaction summary)
-        6. Specific Values (exact values mentioned)
+        4. Query Type (payment analysis, transaction summary)
+        5. Specific Values (exact values mentioned)
         
         Respond in JSON format:
         {{
             "intent": "clear description of what user wants",
             "payment_types": ["VISA", "MasterCard", "Cash"],
             "time_context": "specific time period or relative time",
-            "outlet_context": "specific outlets or all",
-            "query_type": "payment_analysis|product_analysis|transaction_summary|combined",
+            "query_type": "payment_analysis|transaction_summary|combined",
             "specific_values": {{
                 "payment_types": ["VISA", "MasterCard"],
-                "outlets": ["MB01", "MB02"],
                 "amounts": [100, 500],
                 "customers": ["John Smith"]
             }},
@@ -170,7 +166,7 @@ class SmartQueryAgent:
     def _create_sql_generation_chain(self):
         """Create SQL generation chain"""
         template = """
-        You are a SQL expert for MumsAndBabies4SUTD CRM database. Generate an accurate SQL query based on the context analysis.
+        You are a SQL expert for MumsAndBabies4SUTD transaction database. Generate an accurate SQL query based on the context analysis.
         
         Database Schema:
         {schema}
@@ -187,19 +183,13 @@ class SmartQueryAgent:
            - Group by pay_type for payment type summaries
            - Use pay_actamt for payment amounts
         
-        2. For Product Analysis (top selling products, product performance):
-           - Use pos_daud table
-           - Group by dt_itemdesc or dt_itemno
-           - Use dt_qty for quantities, dt_amt for amounts
-        
-        3. For Transaction Summary (customer balances, transaction totals):
+        2. For Transaction Summary (transaction totals, balances):
            - Use pos_haud table
            - Use sa_TransacAmt for transaction amounts
            - Use Total_Outstanding for customer balances
         
-        4. For Combined Analysis (full invoice view):
-           - JOIN all three tables on sa_transacno
-           - pos_haud h INNER JOIN pos_daud d ON h.sa_transacno = d.sa_transacno
+        3. For Combined Analysis (full transaction view):
+           - JOIN pos_haud and pos_taud tables on sa_transacno
            - pos_haud h INNER JOIN pos_taud t ON h.sa_transacno = t.sa_transacno
         
         SQL Server Requirements:
@@ -219,7 +209,7 @@ class SmartQueryAgent:
     def _create_response_generation_chain(self):
         """Create response generation chain"""
         template = """
-        You are a business intelligence analyst for MumsAndBabies4SUTD. Generate a comprehensive response based on the query results.
+        You are a transaction intelligence analyst for MumsAndBabies4SUTD. Generate a comprehensive response based on the query results.
         
         User Query: {query}
         Context Analysis: {context_analysis}
@@ -228,7 +218,7 @@ class SmartQueryAgent:
         Conversation History: {chat_history}
         
         Guidelines:
-        1. Provide clear, business-focused insights
+        1. Provide clear, transaction-focused insights
         2. Format numbers and data professionally
         3. Highlight key findings and trends
         4. If specific payment types were filtered (like VISA), mention this clearly
@@ -527,7 +517,7 @@ class SmartQueryAgent:
             
             # Enhanced response template with validation feedback
             enhanced_template = """
-            You are a business intelligence analyst for MumsAndBabies4SUTD. Generate a comprehensive response based on the query results.
+            You are a transaction intelligence analyst for MumsAndBabies4SUTD. Generate a comprehensive response based on the query results.
             
             User Query: {query}
             Context Analysis: {context_analysis}
@@ -537,7 +527,7 @@ class SmartQueryAgent:
             Conversation History: {chat_history}
             
             Guidelines:
-            1. Provide clear, business-focused insights
+            1. Provide clear, transaction-focused insights
             2. Format numbers and data professionally
             3. Highlight key findings and trends
             4. If specific payment types were filtered (like VISA), mention this clearly
@@ -627,69 +617,8 @@ class SmartQueryAgent:
         return "; ".join(context_parts) if context_parts else "No specific context"
     
     def query(self, question: str) -> str:
-        """Main query processing method with validation and debugging"""
-        try:
-            if not self.openai_api_key:
-                return "Error: OpenAI API key not configured."
-            
-            # Initialize chat history if not exists
-            if not hasattr(self, 'chat_history'):
-                self.chat_history = []
-            
-            # Add user question to history
-            self.chat_history.append(HumanMessage(content=question))
-            
-            print(f"🔍 Analyzing query: {question}")
-            
-            # 1. Analyze query context
-            context_analysis = self._analyze_query_context(question)
-            print(f"📊 Context analysis: {context_analysis}")
-            
-            # 2. Generate SQL query
-            sql_query = self._generate_sql_query(question, context_analysis)
-            if not sql_query:
-                return "Error: Could not generate SQL query."
-            
-            print(f"🔧 Generated SQL: {sql_query}")
-            print(f"🔧 SQL Query (for debugging): {sql_query}")
-            
-            # 3. Execute SQL query
-            query_results = self._execute_query(sql_query)
-            print(f"📈 Query results: {str(query_results)[:200]}...")
-            
-            # 4. Validate results against user intent
-            validation_result = self._validate_results(question, context_analysis, sql_query, query_results)
-            print(f"✅ Validation result: {validation_result}")
-            
-            # 5. Generate response with validation feedback
-            response = self._generate_response(question, context_analysis, sql_query, query_results, validation_result)
-            
-            # 6. Update context
-            self._update_context(context_analysis, question)
-            
-            # 7. Add response to history
-            self.chat_history.append(AIMessage(content=response))
-            
-            # 8. Add debugging information to response
-            debug_info = f"\n\n--- DEBUGGING INFO ---\n"
-            debug_info += f"SQL Query Used: {sql_query}\n"
-            debug_info += f"Validation: {'✅ Valid' if validation_result.get('is_valid', True) else '❌ Issues Found'}\n"
-            debug_info += f"Confidence: {validation_result.get('confidence', 0.0):.2f}\n"
-            if validation_result.get('issues'):
-                debug_info += f"Issues: {', '.join(validation_result['issues'])}\n"
-            if validation_result.get('suggestions'):
-                debug_info += f"Suggestions: {', '.join(validation_result['suggestions'])}\n"
-            debug_info += f"Explanation: {validation_result.get('explanation', 'No explanation provided')}\n"
-            debug_info += f"--- END DEBUGGING ---"
-            
-            return response + debug_info
-            
-        except Exception as e:
-            error_msg = f"Error processing query: {str(e)}"
-            print(error_msg)
-            if hasattr(self, 'chat_history'):
-                self.chat_history.append(AIMessage(content=error_msg))
-            return error_msg
+        """Main query processing method - Payment Analysis Only"""
+        return "Sorry, I only support payment analysis queries. Please use the Payment Analysis Tool for payment-related queries."
     
     def clear_context(self):
         """Clear conversation context and history"""

@@ -32,16 +32,14 @@ try:
     sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
     
     from hardcoded_queries import get_hardcoded_query
-    from src.smart_query_agent import SmartQueryAgent
     
 except ImportError as e:
     print(f"Import Error: {e}")
     print("Please check your dependencies and virtual environment")
     sys.exit(1)
 
-# Global database and agent
+# Global database
 db = None
-smart_query_agent = None
 
 def get_database_connection():
     """Get lightweight database connection for hardcoded queries"""
@@ -89,26 +87,24 @@ def get_database_connection():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize the CRM agent on startup"""
-    global agent, db
+    """Initialize the Payment Analysis API on startup"""
+    global db
     try:
-        print("Starting API...")
+        print("Starting Payment Analysis API...")
         # Initialize connections lazily
-        agent = None
         db = None
-        print("API ready!")
+        print("Payment Analysis API ready!")
     except Exception as e:
         print(f"Error: {e}")
-        agent = None
         db = None
     
     yield  # App is running
     
     # Cleanup on shutdown
-    print("API shutting down...")
+    print("Payment Analysis API shutting down...")
 
 # Initialize FastAPI app with lifespan
-app = FastAPI(title="CRM API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Payment Analysis API", version="1.0.0", lifespan=lifespan)
 
 # Add CORS middleware to allow React frontend to connect
 app.add_middleware(
@@ -270,20 +266,10 @@ def determine_table_title(query: str) -> str:
     """Determine appropriate table title based on query"""
     query_lower = query.lower()
     
-    if "payment summary" in query_lower and "outlet" in query_lower:
-        return "Payment Summary by Outlet and Payment Type"
-    elif "collection" in query_lower and "payment" in query_lower:
+    if "collection" in query_lower and "payment" in query_lower:
         return "Collection Report by Payment Type"
-    elif "customer" in query_lower and "outstanding" in query_lower:
-        return "Customer Outstanding Amounts"
     elif "invoice" in query_lower and "payment" in query_lower:
         return "Invoice Payment Analysis"
-    elif "employee" in query_lower or "staff" in query_lower:
-        return "Employee Performance Report"
-    elif "product" in query_lower and "sales" in query_lower:
-        return "Product Sales Analysis"
-    elif "outlet" in query_lower and "performance" in query_lower:
-        return "Outlet Performance Summary"
     elif "transactions from last month" in query_lower or "monthly" in query_lower:
         return "Transactions from Last Month"
     elif "transactions from last quarter" in query_lower or "quarterly" in query_lower:
@@ -293,9 +279,9 @@ def determine_table_title(query: str) -> str:
     elif "transactions from last 15 days" in query_lower or "recent" in query_lower:
         return "Recent Transactions (Last 15 Days)"
     elif "report" in query_lower:
-        return "Business Report"
+        return "Transaction Report"
     else:
-        return "Query Results"
+        return "Transaction Results"
 
 def extract_table_data(result_text: str, query: str) -> Optional[TableData]:
     """Extract table data from the result text"""
@@ -309,9 +295,8 @@ def extract_table_data(result_text: str, query: str) -> Optional[TableData]:
             # Look for table patterns (more flexible detection)
             if '|' in line and len(line.split('|')) >= 2:
                 if not in_table:
-                    # Check if this looks like a header row - expanded keywords for retail/POS data
-                    header_keywords = ['id', 'name', 'customer', 'order', 'product', 'amount', 'date', 'status', 'email', 'phone', 
-                                     'outlet', 'payment', 'type', 'transaction', 'sale', 'balance', 'tax', 'receivable', 'gst']
+                    # Check if this looks like a header row - transaction-focused keywords
+                    header_keywords = ['id', 'transaction', 'payment', 'type', 'amount', 'date', 'status', 'invoice', 'receipt', 'tax', 'gst']
                     if any(keyword in line.lower() for keyword in header_keywords):
                         in_table = True
                         table_lines.append(line)
@@ -337,23 +322,17 @@ def extract_table_data(result_text: str, query: str) -> Optional[TableData]:
                         rows.append(row)
             
             if headers and rows:
-                # Determine table title based on query - expanded for retail/POS reports
-                title = "Query Results"
+                # Determine table title based on query - transaction-focused
+                title = "Transaction Results"
                 query_lower = query.lower()
                 if "collection" in query_lower and "payment" in query_lower:
                     title = "Collection by Payment Type Report"
                 elif "payment" in query_lower:
                     title = "Payment Analysis"
-                elif "outlet" in query_lower:
-                    title = "Outlet Performance"
-                elif "customer" in query_lower:
-                    title = "Customer Data"
-                elif "order" in query_lower:
-                    title = "Order Data"
-                elif "product" in query_lower:
-                    title = "Product Data"
+                elif "invoice" in query_lower:
+                    title = "Invoice Data"
                 elif "report" in query_lower:
-                    title = "Business Report"
+                    title = "Transaction Report"
                 elif "transaction" in query_lower:
                     title = "Transaction Data"
                 
@@ -380,9 +359,8 @@ def should_include_table(query: str) -> bool:
     """Determine if table should be included based on query type"""
     query_lower = query.lower()
     table_keywords = [
-        "show me", "list", "top", "best", "report", "analysis", 
-        "customers", "orders", "products", "employees", "sales",
-        "collection", "payment", "outlet", "transaction", "pos"
+        "show me", "list", "report", "analysis", 
+        "collection", "payment", "transaction", "invoice", "receipt"
     ]
     return any(keyword in query_lower for keyword in table_keywords)
 
@@ -426,121 +404,121 @@ def get_greeting_response(query: str) -> str:
     # Good morning responses (5 AM - 12 PM)
     if "good morning" in query_lower or ("morning" in query_lower and "good" in query_lower):
         responses = [
-            "Good morning. I'm your AI CRM assistant for MumsAndBabies4SUTD. I can help you analyze your business data and generate reports.",
-            "Morning. I'm here to assist with your business performance analysis. I can help you with sales reports, customer analysis, and more.",
-            "Good morning. I'm your CRM data analysis assistant. How can I help you today?"
+            "Good morning. I'm your AI transaction analysis assistant for MumsAndBabies4SUTD. I can help you analyze transaction data and generate payment reports.",
+            "Morning. I'm here to assist with your transaction analysis. I can help you with payment reports, transaction summaries, and more.",
+            "Good morning. I'm your transaction data analysis assistant. How can I help you today?"
         ]
         return responses[hash(query) % len(responses)]
     
     # Good afternoon responses (12 PM - 5 PM)
     elif "good afternoon" in query_lower or ("afternoon" in query_lower and "good" in query_lower):
         responses = [
-            "Good afternoon. I'm your AI CRM assistant. I can help you with business insights and data analysis.",
-            "Afternoon. I can assist you with sales analysis, customer reports, and performance metrics.",
-            "Good afternoon. I'm here to help you analyze your MumsAndBabies4SUTD data. What can I help you with?"
+            "Good afternoon. I'm your AI transaction analysis assistant. I can help you with transaction insights and payment analysis.",
+            "Afternoon. I can assist you with payment analysis, transaction reports, and payment metrics.",
+            "Good afternoon. I'm here to help you analyze your transaction data. What can I help you with?"
         ]
         return responses[hash(query) % len(responses)]
     
     # Good evening responses (5 PM - 10 PM)
     elif "good evening" in query_lower or ("evening" in query_lower and "good" in query_lower):
         responses = [
-            "Good evening. I'm your AI CRM assistant, ready to help you with business insights and data analysis.",
-            "Evening. I can help you review your day's performance with sales summaries and customer analysis.",
-            "Good evening. I'm here to help you with your CRM data analysis. How can I assist you?"
+            "Good evening. I'm your AI transaction analysis assistant, ready to help you with transaction insights and payment analysis.",
+            "Evening. I can help you review your day's transaction performance with payment summaries and transaction analysis.",
+            "Good evening. I'm here to help you with your transaction data analysis. How can I assist you?"
         ]
         return responses[hash(query) % len(responses)]
     
     # How are you responses
     elif "how are you" in query_lower or "how's it going" in query_lower or "what's up" in query_lower:
         responses = [
-            "I'm functioning well, thank you. I'm ready to help you analyze your business data. How can I assist you today?",
-            "I'm operating normally. I'm here to help with CRM analysis and can assist you with sales reports and customer insights.",
-            "I'm working properly. I can help you analyze your business data and provide insights. What would you like to explore?",
-            "I'm functioning correctly. I can help you understand your CRM system data. What would you like to know?"
+            "I'm functioning well, thank you. I'm ready to help you analyze your transaction data. How can I assist you today?",
+            "I'm operating normally. I'm here to help with transaction analysis and can assist you with payment reports and transaction insights.",
+            "I'm working properly. I can help you analyze your transaction data and provide insights. What would you like to explore?",
+            "I'm functioning correctly. I can help you understand your transaction system data. What would you like to know?"
         ]
         return responses[hash(query) % len(responses)]
     
     # Simple hello/hi responses
     elif any(word in query_lower for word in ["hello", "hi", "hey"]):
         responses = [
-            "Hello. I'm your AI CRM assistant for MumsAndBabies4SUTD. I can help you with business data analysis and reports.",
-            "Hi. I specialize in analyzing retail data and generating business reports. What would you like to explore?",
-            "Hello. I'm your business intelligence assistant. I can help you with customer analysis, sales reports, and performance metrics.",
-            "Hi there. I'm here to help you analyze your business data. I can assist with sales, customers, and performance analysis.",
-            "Hello. I'm your AI CRM assistant, ready to help you with data analysis from your MumsAndBabies4SUTD system."
+            "Hello. I'm your AI transaction analysis assistant for MumsAndBabies4SUTD. I can help you with transaction data analysis and payment reports.",
+            "Hi. I specialize in analyzing transaction data and generating payment reports. What would you like to explore?",
+            "Hello. I'm your transaction intelligence assistant. I can help you with payment analysis, transaction reports, and payment metrics.",
+            "Hi there. I'm here to help you analyze your transaction data. I can assist with payments, transactions, and payment analysis.",
+            "Hello. I'm your AI transaction analysis assistant, ready to help you with data analysis from your MumsAndBabies4SUTD transaction system."
         ]
         return responses[hash(query) % len(responses)]
 
     # Help requests
     elif any(word in query_lower for word in ["help", "what can you do", "capabilities", "who are you"]):
         help_responses = [
-            """I'm your AI CRM Assistant.
+            """I'm your AI Transaction Analysis Assistant.
 
 My Capabilities:
-- Business Reports: Generate comprehensive reports on sales, customers, and performance
-- Data Analysis: Analyze trends, patterns, and insights from your retail data
-- Quick Queries: Get instant answers to common business questions
-- Custom Analysis: Create tailored reports based on your specific needs
+- Transaction Reports: Generate comprehensive reports on payments and transactions
+- Payment Analysis: Analyze payment trends, patterns, and insights from your transaction data
+- Quick Queries: Get instant answers to common transaction questions
+- Custom Analysis: Create tailored reports based on your specific transaction needs
 
 Sample Questions:
-- "Show me outlet performance"
-- "List all customers with outstanding amounts"
-- "Generate a payment summary report"
+- "Show me payment summary by type"
+- "List all transactions from last month"
+- "Generate a comprehensive collection report"
 
 
-Ask me anything about your business data.""",
+Ask me anything about your transaction data.""",
             
-            """I'm your business intelligence assistant.
+            """I'm your transaction intelligence assistant.
 
 What I can do for you:
-- Sales Analysis: Track performance, trends, and opportunities
-- Customer Insights: Understand your customer base and behavior
-- Performance Metrics: Monitor outlets, staff, and product performance
-- Business Intelligence: Get actionable insights from your data
+- Payment Analysis: Track payment performance, trends, and opportunities
+- Transaction Insights: Understand your transaction patterns and behavior
+- Payment Metrics: Monitor payment types, amounts, and transaction performance
+- Transaction Intelligence: Get actionable insights from your transaction data
 
 Try asking:
-- "Show me today's sales performance"
-- "Which customers have outstanding payments?"
-- "What are our top performing outlets?"
-- "Generate a comprehensive business report"
+- "Show me today's payment performance"
+- "Which payment types are most popular?"
+- "What are our transaction trends?"
+- "Generate a comprehensive payment report"
 
-I'm here to help you analyze your data.""",
+I'm here to help you analyze your transaction data.""",
             
-            """I'm your AI-powered CRM specialist.
+            """I'm your AI-powered transaction analysis specialist.
 
 My Expertise:
-- Data Mining: Extract valuable insights from your retail database
-- Report Generation: Create detailed business reports instantly
-- Trend Analysis: Identify patterns and opportunities in your data
-- Performance Tracking: Monitor sales, customers, and operations
+- Data Mining: Extract valuable insights from your transaction database
+- Report Generation: Create detailed transaction reports instantly
+- Trend Analysis: Identify patterns and opportunities in your transaction data
+- Performance Tracking: Monitor payments, transactions, and payment operations
 
 Quick Start:
-- "Show me outlet performance" - Get outlet analytics
-- "Customer analysis" - Understand your customer base
+- "Show me payment summary" - Get payment analytics
+- "Transaction analysis" - Understand your transaction patterns
 - "Payment summary" - Review payment trends
-- "Top products" - See what's selling best
+- "Recent transactions" - See recent transaction activity
 
-Ready to explore your data."""
+Ready to explore your transaction data."""
         ]
         return help_responses[hash(query) % len(help_responses)]
 
     # Thank you responses
     elif any(word in query_lower for word in ["thank", "thanks"]):
         thank_responses = [
-            "You're welcome. I'm here whenever you need help with your CRM data analysis. Feel free to ask me about sales reports, customer insights, or performance metrics. Is there anything else I can help you with?",
-            "My pleasure. I can help you make sense of your business data. Don't hesitate to reach out if you need more insights or reports. What else can I assist you with?",
-            "You're welcome. I'm here to help with your business analytics. Feel free to ask me anything about your sales, customers, or performance data.",
-            "Happy to help. I'm here to make your data analysis easier. If you need any more reports or insights, just let me know. What would you like to explore next?"
+            "You're welcome. I'm here whenever you need help with your transaction data analysis. Feel free to ask me about payment reports, transaction insights, or payment metrics. Is there anything else I can help you with?",
+            "My pleasure. I can help you make sense of your transaction data. Don't hesitate to reach out if you need more insights or reports. What else can I assist you with?",
+            "You're welcome. I'm here to help with your transaction analytics. Feel free to ask me anything about your payments, transactions, or payment data.",
+            "Happy to help. I'm here to make your transaction data analysis easier. If you need any more reports or insights, just let me know. What would you like to explore next?"
         ]
         return thank_responses[hash(query) % len(thank_responses)]
 
     # Goodbye responses
     elif any(word in query_lower for word in ["bye", "goodbye", "see you", "have a good day"]):
         goodbye_responses = [
-            "Goodbye. Thanks for using the AI CRM Assistant. Come back anytime you need help with your business data analysis. Have a good day.",
-            "See you later. It was good helping you today. I'm always here when you need business insights. Take care.",
-            "Farewell. Thanks for letting me help with your CRM analysis. I'll be here whenever you need me. Have a good day.",
-            "Goodbye for now. I enjoyed helping you with your business data. Come back anytime for more insights and reports."
+            "Goodbye. Thanks for using the AI Transaction Analysis Assistant. Come back anytime you need help with your transaction data analysis. Have a good day.",
+            "See you later. It was good helping you today. I'm always here when you need transaction insights. Take care.",
+            "Farewell. Thanks for letting me help with your transaction analysis. I'll be here whenever you need me. Have a good day.",
+            "Goodbye for now. I enjoyed helping you with your transaction data. Come back anytime for more insights and reports."
         ]
         return goodbye_responses[hash(query) % len(goodbye_responses)]
 
@@ -548,18 +526,18 @@ Ready to explore your data."""
     else:
         return """Hello.
 
-I'm your AI CRM Assistant for MumsAndBabies4SUTD. I specialize in helping you analyze your business data and generate reports.
+I'm your AI Transaction Analysis Assistant for MumsAndBabies4SUTD. I specialize in helping you analyze your transaction data and generate payment reports.
 
 What I can do:
-- Answer questions about your customers, sales, and performance
-- Generate comprehensive business reports
-- Provide insights and analytics
-- Help with data analysis
+- Answer questions about your transactions, payments, and payment performance
+- Generate comprehensive transaction reports
+- Provide payment insights and analytics
+- Help with transaction data analysis
 
 Try asking:
-- "Show me outlet performance"
-- "Generate a customer analysis report"
-- "What are the top selling products?"
+- "Show me payment summary by type"
+- "Generate a comprehensive collection report"
+- "What are the recent transactions?"
 
 How can I assist you today?"""
 
@@ -766,16 +744,14 @@ async def process_query(query: Query):
                 timestamp=datetime.now().isoformat()
             )
         
-        # Check for hardcoded queries
-        hardcoded_sql = get_hardcoded_query(query.query)
+        # Check for payment analysis queries
+        payment_sql = get_hardcoded_query(query.query)
         
-        if hardcoded_sql:
-            # Check if this is a template query that needs modification
-            hardcoded_sql = process_template_query(hardcoded_sql, query.query)
-            # Use hardcoded SQL query for instant response
+        if payment_sql:
+            # Use payment analysis SQL query for instant response
             query_start_time = time.time()
-            print(f"⚡QUERY: {query.query}")
-            print(f"🔧 HARDCODED SQL: {hardcoded_sql}")
+            print(f"⚡PAYMENT QUERY: {query.query}")
+            print(f"🔧 PAYMENT ANALYSIS SQL: {payment_sql}")
             
             # Get lightweight database connection (no LLM, no agent)
             db_conn = get_database_connection()
@@ -787,7 +763,7 @@ async def process_query(query: Query):
                     timestamp=datetime.now().isoformat()
                 )
             
-            result = db_conn.run(hardcoded_sql)
+            result = db_conn.run(payment_sql)
             query_time = time.time() - query_start_time
             print(f"Database execution time: {query_time:.2f} seconds")
             
@@ -797,20 +773,18 @@ async def process_query(query: Query):
                 result_str = str(result)
                 
                 # Get column names from SQL
-                columns = extract_column_names_from_sql(hardcoded_sql)
+                columns = extract_column_names_from_sql(payment_sql)
                 
-                # If column extraction failed, use hardcoded column names for known queries
+                # If column extraction failed, use payment analysis column names
                 if not columns:
-                    if "comprehensive collection report" in query.query.lower():
-                        columns = ["Outlet", "Payment_Type", "Num_Transactions", "Num_New_Sales", "Num_Balance_Payments", "New_Sales_Amount", "Balance_Paid_Amount", "Total_Amount", "Tax_Collected", "Net_Amount"]
-                    elif "payment summary" in query.query.lower():
-                        columns = ["Outlet", "Payment_Type", "Num_Payments", "Num_New_Sales", "Num_Bal_Payments", "New_Sales_Amt", "Bal_Paid_Amt", "Total_Amt", "Taxes", "Bank_Charges", "Receivables"]
-                    elif "outlet performance" in query.query.lower():
-                        columns = ["Outlet", "Num_Transactions", "Total_Revenue", "Average_Transaction_Value", "Unique_Customers", "First_Transaction", "Latest_Transaction"]
-                    elif "customer analysis" in query.query.lower():
-                        columns = ["Cust_No", "Cust_code", "Cust_name", "Cust_phone1", "Cust_email", "Outlet", "Cust_JoinDate", "oustanding_payment", "Outstanding_Amount", "Cust_Point", "Loyalty_Points", "Status"]
-                    elif any(word in query.query.lower() for word in ["transactions from last", "monthly", "quarterly", "yearly", "recent"]):
-                        columns = ["sa_transacno", "sa_date", "sa_custname", "sa_totamt", "sa_totdisc", "sa_totgst", "sa_status", "Outlet"]
+                    if "summary" in query.query.lower() or "collection" in query.query.lower():
+                        columns = ["pay_type", "pay_desc", "Num_Transactions", "Total_Collected", "Total_Tax", "Net_Receivables", "Avg_Transaction_Value"]
+                    elif "list" in query.query.lower() or "show" in query.query.lower():
+                        columns = ["Transaction_No", "Transaction_Date", "Customer_Name", "Total_Amount", "pay_type", "Payment_Type", "Payment_Amount", "Outlet"]
+                    elif "count" in query.query.lower():
+                        columns = ["Total_Transactions", "Total_Payment_Records"]
+                    elif "average" in query.query.lower():
+                        columns = ["Average_Payment_Amount", "Min_Payment_Amount", "Max_Payment_Amount", "Total_Transactions"]
                     else:
                         columns = [f"Column_{i+1}" for i in range(10)]  # Default fallback
                 
@@ -836,8 +810,8 @@ async def process_query(query: Query):
                                     row_dict[columns[i]] = formatted_value
                         rows.append(row_dict)
                     
-                    result_text = f"Report completed successfully\n\n"
-                    result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
+                    result_text = f"Payment Analysis Report completed successfully\n\n"
+                    result_text += f"SQL Query Used:\n{payment_sql}\n\n"
                     result_text += f"Total Records: {len(rows)}\n"
                     result_text += f"Columns: {', '.join(columns)}"
                     include_table = True
@@ -864,8 +838,8 @@ async def process_query(query: Query):
                                         row_dict[columns[i]] = formatted_value
                                 rows.append(row_dict)
                             
-                            result_text = f"Report completed successfully\n\n"
-                            result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
+                            result_text = f"Payment Analysis Report completed successfully\n\n"
+                            result_text += f"SQL Query Used:\n{payment_sql}\n\n"
                             result_text += f"Total Records: {len(rows)}\n"
                             result_text += f"Columns: {', '.join(columns)}"
                             include_table = True
@@ -916,8 +890,8 @@ async def process_query(query: Query):
                                             row_dict[columns[i]] = formatted_value
                                     rows.append(row_dict)
                                 
-                                result_text = f"Report completed successfully\n\n"
-                                result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
+                                result_text = f"Payment Analysis Report completed successfully\n\n"
+                                result_text += f"SQL Query Used:\n{payment_sql}\n\n"
                                 result_text += f"Total Records: {len(rows)}\n"
                                 result_text += f"Columns: {', '.join(columns)}"
                                 include_table = True
@@ -930,7 +904,7 @@ async def process_query(query: Query):
                                 
                                 # Final fallback - create empty structure
                                 rows = []
-                                result_text = f"Report completed with parsing issues\n\nSQL Query Used:\n{hardcoded_sql}\n\nRaw Data: {result_str[:200]}..."
+                                result_text = f"Payment Analysis Report completed with parsing issues\n\nSQL Query Used:\n{payment_sql}\n\nRaw Data: {result_str[:200]}..."
                                 include_table = True
                                 parsed_results = rows
                     
@@ -941,51 +915,28 @@ async def process_query(query: Query):
                         
                         # Final fallback - create empty structure
                         rows = []
-                        result_text = f"Report completed with parsing issues\n\nSQL Query Used:\n{hardcoded_sql}\n\nRaw Data: {result_str[:200]}..."
+                        result_text = f"Payment Analysis Report completed with parsing issues\n\nSQL Query Used:\n{payment_sql}\n\nRaw Data: {result_str[:200]}..."
                         include_table = True
                         parsed_results = rows
                     
             except Exception as e:
-                result_text = f"Error processing results: {str(e)}\n\nSQL Query Used:\n{hardcoded_sql}"
+                result_text = f"Error processing results: {str(e)}\n\nSQL Query Used:\n{payment_sql}"
                 include_table = False
                 parsed_results = None
         else:
-            # No hardcoded query found - use Smart Query Agent to generate SQL
-            query_start_time = time.time()
-            print(f"🤖 AI QUERY: {query.query}")
-            print(f"🧠 AI-GENERATED SQL: Will be generated by SmartQueryAgent")
-            
-            # Initialize Smart Query Agent only when needed
-            if not smart_query_agent:
-                try:
-                    init_start_time = time.time()
-                    print("Initializing Smart Query Agent for AI query...")
-                    smart_query_agent = SmartQueryAgent()
-                    init_time = time.time() - init_start_time
-                    print(f"Smart Query Agent initialization time: {init_time:.2f} seconds")
-                except Exception as e:
-                    return Response(
-                        success=False,
-                        query=query.query,
-                        result=f"Error initializing Smart Query Agent: {str(e)}",
-                        timestamp=datetime.now().isoformat()
-                    )
-            
-            result = smart_query_agent.query(query.query)
-            result_text = str(result)
-            
-            query_time = time.time() - query_start_time
-            print(f"Total AI processing time: {query_time:.2f} seconds")
-            print(f"🤖 AI Response: {result_text[:200]}...")
-            
-            # Determine if we should include table data
-            include_table = query.include_table or should_include_table(query.query)
+            # No payment analysis query found - return clear message
+            return Response(
+                success=False,
+                query=query.query,
+                result="Only supported payment type reports\n\nI can only help you with payment analysis queries. Please ask about:\n\n💳 Payment Types:\n- VISA, MASTERCARD, CASH, AMEX, PAYPAL\n- PAYNOW, SHOPBACK, PREPAID, ATOME\n- WECHAT, PAYLAH, GRABPAY, NETS\n- And many more payment methods\n\n📊 Analysis Types:\n- Payment summaries and reports\n- Transaction counts and totals\n- Payment trends and averages\n- Payment filtering by amount\n\n⏰ Time Periods:\n- Last month, last quarter, last year\n- Last 15 days, last 7 days, last 30 days\n- Today, yesterday\n\n📝 Example Queries:\n- 'Show me VISA payments from last month'\n- 'List all CASH transactions'\n- 'Count MASTERCARD payments from last quarter'\n- 'Show me payments greater than $100'\n- 'Generate a payment summary report'",
+                timestamp=datetime.now().isoformat()
+            )
         
         # Extract table data if needed
         table_data = None
         if include_table:
-            # For hardcoded queries - use structured data
-            if hardcoded_sql and parsed_results is not None:
+            # For payment analysis queries - use structured data
+            if payment_sql and parsed_results is not None:
                 print(f"DEBUG: Creating table with {len(parsed_results)} rows and {len(columns)} columns")
                 print(f"DEBUG: First row: {parsed_results[0] if parsed_results else 'No rows'}")
                 table_data = TableData(
@@ -993,9 +944,6 @@ async def process_query(query: Query):
                     rows=parsed_results,
                     title=determine_table_title(query.query)
                 )
-            else:
-                # For AI queries - extract from result text
-                table_data = extract_table_data(result_text, query.query)
         
         # Only include table if it was successfully created
         response_data = {
@@ -1024,10 +972,11 @@ async def process_query(query: Query):
         )
 
 if __name__ == "__main__":
-    print("CRM API Starting...")
+    print("Payment Analysis API Starting...")
     print("URL: http://localhost:5000")
     print("Endpoint: POST /query")
     print("Docs: http://localhost:5000/docs")
+    print("Supported: Payment Analysis Queries Only")
     print("=" * 50)
     
     uvicorn.run(
