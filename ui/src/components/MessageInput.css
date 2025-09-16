@@ -1,3 +1,4 @@
+
 .message-input-form {
   width: 100%;
 }
@@ -6,16 +7,16 @@
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
-  background-color: #2a2a2a;
-  border: 2px solid #404040;
+  background-color: #1e293b;
+  border: 2px solid rgba(148, 163, 184, 0.2);
   border-radius: 12px;
   padding: 0.75rem;
-  transition: border-color 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .message-input-container:focus-within {
-  border-color: #4b5563;
-  box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1);
+  /* border-color: #667eea; */
+  /* box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); */
 }
 
 .message-input {
@@ -25,7 +26,7 @@
   resize: none;
   font-size: 0.95rem;
   line-height: 1.5;
-  color: #e5e5e5;
+  color: #f8fafc;
   background-color: transparent;
   min-height: 20px;
   max-height: 120px;
@@ -36,11 +37,11 @@
 }
 
 .message-input::placeholder {
-  color: #6b7280;
+  color: #94a3b8;
 }
 
 .message-input:disabled {
-  color: #6b7280;
+  color: #94a3b8;
   cursor: not-allowed;
 }
 
@@ -48,31 +49,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #4b5563;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #ffffff;
   border: none;
   border-radius: 8px;
   width: 40px;
   height: 40px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   flex-shrink: 0;
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: #374151;
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(75, 85, 99, 0.3);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .send-button:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(75, 85, 99, 0.3);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .send-button:disabled {
-  background-color: #404040;
-  color: #6b7280;
+  background-color: #334155;
+  color: #94a3b8;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -85,8 +86,6 @@
 .send-button:hover:not(:disabled) svg {
   transform: translateX(2px);
 }
-
-/* Auto-resize textarea - handled by JavaScript */
 
 /* Responsive design */
 @media (max-width: 768px) {

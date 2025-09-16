@@ -13,7 +13,7 @@ const ChatInterface = () => {
   const [connectionStatus, setConnectionStatus] = useState('checking');
   const [shouldFocusInput, setShouldFocusInput] = useState(false);
   const messagesEndRef = useRef(null);
-  const [mockContent, setMockContent] = useState("");
+  const [showMockButton, setShowMockButton] = useState(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -213,7 +213,9 @@ const ChatInterface = () => {
     };
 
     setMessages(prev => [...prev, mockMessage]);
+    setShowMockButton(false);  // Hide the button after adding the mock message
   };
+
 
 
   const getStatusColor = () => {
@@ -228,7 +230,7 @@ const ChatInterface = () => {
     <div className="chat-interface">
       <div className="chat-header">
         <div className="header-content">
-          <h1>AI Assistant</h1>
+          {/* <h1>AI Assistant</h1> */}
           <div className="connection-status">
             <div
               className="status-indicator"
@@ -257,7 +259,12 @@ const ChatInterface = () => {
       )}
 
       {/* ✅ Dummy button to generate mock report */}
-     {/* <button onClick={handleGenerateMockApiResponse}>Generate API Mock Response</button> */}
+      {/* {showMockButton && (
+        <button onClick={handleGenerateMockApiResponse} style={{ marginTop: "10px" }}>
+          Generate API Mock Response
+        </button>
+      )} */}
+
 
       <div className="messages-container">
         <MessageList
