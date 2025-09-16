@@ -186,13 +186,10 @@ def convert_db_results_to_table(result_text: str, query: str) -> Optional[TableD
                             formatted_row.append(value)
                     formatted_results.append(formatted_row)
                 
-                # Filter out zero-value columns
-                filtered_results, filtered_columns = filter_zero_columns(formatted_results, columns)
-                
                 # Convert to table format - ensure all values are strings
-                headers = filtered_columns
+                headers = columns
                 rows = []
-                for row in filtered_results:
+                for row in formatted_results:
                     # Convert all values to strings for Pydantic compatibility
                     string_row = [str(value) for value in row]
                     rows.append(string_row)
@@ -656,77 +653,6 @@ def format_decimal_value(value):
     else:
         return value
 
-def filter_zero_columns(rows, columns):
-    """Filter out columns that contain ONLY zero values (all rows must be zero)"""
-    if not rows or not columns:
-        return rows, columns
-    
-    # Check which columns have ALL zero values
-    zero_columns = set()
-    
-    for col_idx, column in enumerate(columns):
-        all_zero = True
-        non_zero_count = 0
-        total_count = 0
-        
-        for row in rows:
-            if col_idx < len(row):
-                value = row[column] if isinstance(row, dict) else row[col_idx]
-                total_count += 1
-                
-                # Check if value is zero (numeric zero or string "0")
-                if isinstance(value, (int, float)):
-                    if value != 0:
-                        all_zero = False
-                        non_zero_count += 1
-                elif isinstance(value, str):
-                    try:
-                        if float(value) != 0:
-                            all_zero = False
-                            non_zero_count += 1
-                    except:
-                        # Non-numeric string, keep the column
-                        all_zero = False
-                        non_zero_count += 1
-                else:
-                    # Non-numeric value, keep the column
-                    all_zero = False
-                    non_zero_count += 1
-        
-        # Only filter if ALL values are zero (no non-zero values found)
-        if all_zero and total_count > 0:
-            zero_columns.add(column)
-            print(f"🚫 Column '{column}': All {total_count} values are zero - filtering out")
-        elif non_zero_count > 0:
-            print(f"✅ Column '{column}': {non_zero_count}/{total_count} non-zero values - keeping column")
-    
-    # Filter out zero columns
-    if zero_columns:
-        print(f"🚫 Filtering out columns with ALL zero values: {', '.join(zero_columns)}")
-        
-        # Filter columns list
-        filtered_columns = [col for col in columns if col not in zero_columns]
-        
-        # Filter rows
-        filtered_rows = []
-        for row in rows:
-            if isinstance(row, dict):
-                # Dictionary row
-                filtered_row = {k: v for k, v in row.items() if k not in zero_columns}
-                filtered_rows.append(filtered_row)
-            else:
-                # List row
-                filtered_row = []
-                for i, value in enumerate(row):
-                    if i < len(columns) and columns[i] not in zero_columns:
-                        filtered_row.append(value)
-                filtered_rows.append(filtered_row)
-        
-        return filtered_rows, filtered_columns
-    else:
-        print(f"✅ No columns with ALL zero values found - keeping all columns")
-    
-    return rows, columns
 
 def fast_process_database_result(result, sql_query, query_text):
     """Fast processing of database results with minimal overhead and decimal formatting"""
@@ -774,14 +700,11 @@ def fast_process_database_result(result, sql_query, query_text):
                             row_dict[columns[i]] = formatted_value
                 rows.append(row_dict)
             
-            # Filter out zero-value columns
-            filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
-            
             # Generate result text
             result_text = f"Report completed successfully\n\n"
             result_text += f"SQL Query Used:\n{sql_query}\n\n"
-            result_text += f"Total Records: {len(filtered_rows)}\n"
-            result_text += f"Columns: {', '.join(filtered_columns)}"
+            result_text += f"Total Records: {len(rows)}\n"
+            result_text += f"Columns: {', '.join(columns)}"
             
             processing_time = time.time() - start_time
             print(f"⚡ Fast processing time: {processing_time:.3f} seconds")
@@ -789,8 +712,8 @@ def fast_process_database_result(result, sql_query, query_text):
             return {
                 'success': True,
                 'result_text': result_text,
-                'parsed_results': filtered_rows,
-                'columns': filtered_columns,
+                'parsed_results': rows,
+                'columns': columns,
                 'include_table': True
             }
         
@@ -913,15 +836,12 @@ async def process_query(query: Query):
                                     row_dict[columns[i]] = formatted_value
                         rows.append(row_dict)
                     
-                    # Filter out zero-value columns
-                    filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
-                    
                     result_text = f"Report completed successfully\n\n"
                     result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
-                    result_text += f"Total Records: {len(filtered_rows)}\n"
-                    result_text += f"Columns: {', '.join(filtered_columns)}"
+                    result_text += f"Total Records: {len(rows)}\n"
+                    result_text += f"Columns: {', '.join(columns)}"
                     include_table = True
-                    parsed_results = filtered_rows
+                    parsed_results = rows
                     
                 else:
                     # Try to parse the string representation
@@ -944,15 +864,12 @@ async def process_query(query: Query):
                                         row_dict[columns[i]] = formatted_value
                                 rows.append(row_dict)
                             
-                            # Filter out zero-value columns
-                            filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
-                            
                             result_text = f"Report completed successfully\n\n"
                             result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
-                            result_text += f"Total Records: {len(filtered_rows)}\n"
-                            result_text += f"Columns: {', '.join(filtered_columns)}"
+                            result_text += f"Total Records: {len(rows)}\n"
+                            result_text += f"Columns: {', '.join(columns)}"
                             include_table = True
-                            parsed_results = filtered_rows
+                            parsed_results = rows
                             
                         else:
                             # Try to parse the string representation with datetime handling
@@ -999,15 +916,12 @@ async def process_query(query: Query):
                                             row_dict[columns[i]] = formatted_value
                                     rows.append(row_dict)
                                 
-                                # Filter out zero-value columns
-                                filtered_rows, filtered_columns = filter_zero_columns(rows, columns)
-                                
                                 result_text = f"Report completed successfully\n\n"
                                 result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
-                                result_text += f"Total Records: {len(filtered_rows)}\n"
-                                result_text += f"Columns: {', '.join(filtered_columns)}"
+                                result_text += f"Total Records: {len(rows)}\n"
+                                result_text += f"Columns: {', '.join(columns)}"
                                 include_table = True
-                                parsed_results = filtered_rows
+                                parsed_results = rows
                                 
                             except Exception as parse_error:
                                 print(f"DEBUG: Parse error: {parse_error}")
