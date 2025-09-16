@@ -192,6 +192,163 @@ HARDCODED_SQL_QUERIES = {
     ORDER BY Total_Revenue DESC;
     """,
     
+    # Period-based transaction queries
+    "show me transactions from last month": """
+    DECLARE @Period VARCHAR(20) = 'last_month';
+    
+    WITH LatestDate AS (
+        SELECT MAX(sa_date) AS MaxDate
+        FROM dbo.pos_haud
+    )
+    SELECT 
+        h.sa_transacno,
+        h.sa_date,
+        h.sa_custname,
+        h.sa_totamt,
+        h.sa_totdisc,
+        h.sa_totgst,
+        h.sa_status,
+        h.ItemSIte_Code AS Outlet
+    FROM dbo.pos_haud h
+    CROSS JOIN LatestDate ld
+    WHERE 
+        YEAR(h.sa_date) = YEAR(ld.MaxDate)
+        AND MONTH(h.sa_date) = MONTH(ld.MaxDate)
+    ORDER BY h.sa_date DESC;
+    """,
+    
+    "show me transactions from last quarter": """
+    DECLARE @Period VARCHAR(20) = 'last_quarter';
+    
+    WITH LatestDate AS (
+        SELECT MAX(sa_date) AS MaxDate
+        FROM dbo.pos_haud
+    )
+    SELECT 
+        h.sa_transacno,
+        h.sa_date,
+        h.sa_custname,
+        h.sa_totamt,
+        h.sa_totdisc,
+        h.sa_totgst,
+        h.sa_status,
+        h.ItemSIte_Code AS Outlet
+    FROM dbo.pos_haud h
+    CROSS JOIN LatestDate ld
+    WHERE 
+        DATEPART(QUARTER, h.sa_date) = DATEPART(QUARTER, ld.MaxDate)
+        AND YEAR(h.sa_date) = YEAR(ld.MaxDate)
+    ORDER BY h.sa_date DESC;
+    """,
+    
+    "show me transactions from last year": """
+    DECLARE @Period VARCHAR(20) = 'last_year';
+    
+    WITH LatestDate AS (
+        SELECT MAX(sa_date) AS MaxDate
+        FROM dbo.pos_haud
+    )
+    SELECT 
+        h.sa_transacno,
+        h.sa_date,
+        h.sa_custname,
+        h.sa_totamt,
+        h.sa_totdisc,
+        h.sa_totgst,
+        h.sa_status,
+        h.ItemSIte_Code AS Outlet
+    FROM dbo.pos_haud h
+    CROSS JOIN LatestDate ld
+    WHERE 
+        YEAR(h.sa_date) = YEAR(ld.MaxDate)
+    ORDER BY h.sa_date DESC;
+    """,
+    
+    "show me transactions from last 15 days": """
+    DECLARE @Period VARCHAR(20) = 'last_15_days';
+    
+    WITH LatestDate AS (
+        SELECT MAX(sa_date) AS MaxDate
+        FROM dbo.pos_haud
+    )
+    SELECT 
+        h.sa_transacno,
+        h.sa_date,
+        h.sa_custname,
+        h.sa_totamt,
+        h.sa_totdisc,
+        h.sa_totgst,
+        h.sa_status,
+        h.ItemSIte_Code AS Outlet
+    FROM dbo.pos_haud h
+    CROSS JOIN LatestDate ld
+    WHERE 
+        h.sa_date >= DATEADD(DAY, -15, ld.MaxDate)
+        AND h.sa_date <= ld.MaxDate
+    ORDER BY h.sa_date DESC;
+    """,
+    
+    "show me recent transactions": """
+    DECLARE @Period VARCHAR(20) = 'last_15_days';
+    
+    WITH LatestDate AS (
+        SELECT MAX(sa_date) AS MaxDate
+        FROM dbo.pos_haud
+    )
+    SELECT 
+        h.sa_transacno,
+        h.sa_date,
+        h.sa_custname,
+        h.sa_totamt,
+        h.sa_totdisc,
+        h.sa_totgst,
+        h.sa_status,
+        h.ItemSIte_Code AS Outlet
+    FROM dbo.pos_haud h
+    CROSS JOIN LatestDate ld
+    WHERE 
+        h.sa_date >= DATEADD(DAY, -15, ld.MaxDate)
+        AND h.sa_date <= ld.MaxDate
+    ORDER BY h.sa_date DESC;
+    """,
+    
+    # Payment type specific queries
+    "show me all transactions made through VISA": """
+    SELECT 
+        h.sa_transacno,
+        h.sa_date,
+        h.sa_custname,
+        h.sa_totamt,
+        h.sa_status,
+        t.pay_type,
+        t.pay_desc,
+        t.pay_actamt
+    FROM dbo.pos_haud h
+    INNER JOIN dbo.pos_taud t 
+        ON h.sa_transacno = t.sa_transacno
+    WHERE t.pay_desc = 'VISA'   -- or t.pay_type = 'VS'
+    ORDER BY h.sa_date DESC;
+    """,
+    
+    "show me transactions by payment type": """
+    -- Template query for any payment type (VISA, CASH, MASTERCARD, etc.)
+    -- LLM should modify the WHERE clause based on user's requested payment type
+    SELECT 
+        h.sa_transacno,
+        h.sa_date,
+        h.sa_custname,
+        h.sa_totamt,
+        h.sa_status,
+        t.pay_type,
+        t.pay_desc,
+        t.pay_actamt
+    FROM dbo.pos_haud h
+    INNER JOIN dbo.pos_taud t 
+        ON h.sa_transacno = t.sa_transacno
+    WHERE t.pay_desc = '[PAYMENT_TYPE]'  -- Replace [PAYMENT_TYPE] with actual payment type
+    ORDER BY h.sa_date DESC;
+    """,
+    
     # General queries
     "what tables exist in this database": """
     SELECT 
@@ -218,49 +375,122 @@ HARDCODED_SQL_QUERIES = {
 
 def get_hardcoded_query(user_query):
     """
-    Find a matching hardcoded query based on user input
+    Find a matching hardcoded query using LLM-based intelligent matching
     Returns the SQL query if found, None otherwise
     """
-    query_lower = user_query.lower().strip()
+    import os
+    from dotenv import load_dotenv
+    from langchain_openai import ChatOpenAI
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.output_parsers import StrOutputParser
+    import json
     
-    # Direct matches
+    load_dotenv()
+    
+    # First, try direct matches for exact queries
+    query_lower = user_query.lower().strip()
     if query_lower in HARDCODED_SQL_QUERIES:
         return HARDCODED_SQL_QUERIES[query_lower]
     
-    # Partial matches for common patterns
-    for key, sql in HARDCODED_SQL_QUERIES.items():
-        key_words = key.lower().split()
-        query_words = query_lower.split()
+    # Initialize LLM for intelligent matching
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        print("Warning: OPENAI_API_KEY not found, falling back to keyword matching")
+        return _fallback_keyword_matching(user_query)
+    
+    try:
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",  # Use faster, cheaper model for matching
+            temperature=0,
+            openai_api_key=openai_api_key,
+            max_tokens=1000
+        )
         
-        # Check if most key words are in the query
-        matches = sum(1 for word in key_words if any(word in qw for qw in query_words))
-        if matches >= len(key_words) * 0.6:  # 60% match threshold
-            return sql
+        # Create available queries list for LLM
+        available_queries = list(HARDCODED_SQL_QUERIES.keys())
+        
+        # Create matching prompt
+        template = """
+        You are a query matching expert for a CRM system. Your task is to match user queries with predefined hardcoded queries.
+        
+        User Query: "{user_query}"
+        
+        Available Hardcoded Queries:
+        {available_queries}
+        
+        Instructions:
+        1. Analyze the user's intent and what they want to know
+        2. Find the best matching hardcoded query from the list above
+        3. Consider synonyms, variations, and different ways of asking the same thing
+        4. Only return a match if the intent is very similar (confidence > 0.8)
+        5. If no good match exists, return "NO_MATCH"
+        
+        Examples of good matches:
+        - "show me customer data" → "list all customers with their total outstanding amounts"
+        - "payment report" → "generate a comprehensive collection report by payment type"
+        - "monthly transactions" → "show me transactions from last month"
+        - "top products" → "what are the top selling products?"
+        - "outlet performance" → "show me outlet performance"
+        - "VISA payments" → "show me all transactions made through VISA"
+        - "transactions paid with VISA" → "show me all transactions made through VISA"
+        - "CASH transactions" → "show me transactions by payment type"
+        - "MASTERCARD payments" → "show me transactions by payment type"
+        - "PAYNOW transactions" → "show me transactions by payment type"
+        - "SHOPBACK payments" → "show me transactions by payment type"
+        - "AMEX transactions" → "show me transactions by payment type"
+        - "PAYPAL payments" → "show me transactions by payment type"
+        - "transactions by payment method" → "show me transactions by payment type"
+        
+        Respond with ONLY the exact query name from the list, or "NO_MATCH" if no good match exists.
+        """
+        
+        prompt = ChatPromptTemplate.from_template(template)
+        chain = prompt | llm | StrOutputParser()
+        
+        # Format available queries for the prompt
+        queries_text = "\n".join([f"- {query}" for query in available_queries])
+        
+        # Get LLM response
+        response = chain.invoke({
+            "user_query": user_query,
+            "available_queries": queries_text
+        })
+        
+        # Clean up response
+        matched_query = response.strip()
+        
+        # Check if we got a valid match
+        if matched_query in HARDCODED_SQL_QUERIES:
+            print(f"🤖 LLM matched query: '{user_query}' → '{matched_query}'")
+            return HARDCODED_SQL_QUERIES[matched_query]
+        else:
+            print(f"🤖 LLM found no match for: '{user_query}'")
+            return None
+            
+    except Exception as e:
+        print(f"Error in LLM matching: {e}")
+        print("Falling back to keyword matching")
+        return _fallback_keyword_matching(user_query)
+
+def _fallback_keyword_matching(user_query):
+    """
+    Fallback keyword matching if LLM is not available
+    Only matches period-based transaction queries
+    """
+    query_lower = user_query.lower().strip()
     
-    # Specific keyword matches
-    if any(word in query_lower for word in ['customer', 'outstanding', 'amount']):
-        return HARDCODED_SQL_QUERIES["list all customers with their total outstanding amounts"]
+    # Only period-based transaction queries
+    if any(word in query_lower for word in ['last month', 'monthly', 'this month']):
+        return HARDCODED_SQL_QUERIES["show me transactions from last month"]
     
-    if any(word in query_lower for word in ['collection', 'payment', 'type', 'report']):
-        return HARDCODED_SQL_QUERIES["generate a comprehensive collection report by payment type"]
+    if any(word in query_lower for word in ['last quarter', 'quarterly', 'this quarter']):
+        return HARDCODED_SQL_QUERIES["show me transactions from last quarter"]
     
-    if any(word in query_lower for word in ['payment', 'summary', 'grouped', 'outlet']):
-        return HARDCODED_SQL_QUERIES["payment summary report"]
+    if any(word in query_lower for word in ['last year', 'yearly', 'this year']):
+        return HARDCODED_SQL_QUERIES["show me transactions from last year"]
     
-    if any(word in query_lower for word in ['invoice', 'total amount', 'paid']):
-        return HARDCODED_SQL_QUERIES["list all invoices their total amount and how much has been paid by payment type"]
-    
-    if any(word in query_lower for word in ['employee', 'staff', 'performance']):
-        return HARDCODED_SQL_QUERIES["show me employee performance"]
-    
-    if any(word in query_lower for word in ['product', 'sales', 'analysis']):
-        return HARDCODED_SQL_QUERIES["show me product sales analysis"]
-    
-    if any(word in query_lower for word in ['outlet', 'performance']):
-        return HARDCODED_SQL_QUERIES["show me outlet performance"]
-    
-    if any(word in query_lower for word in ['table', 'database', 'structure']):
-        return HARDCODED_SQL_QUERIES["show me database structure"]
+    if any(word in query_lower for word in ['last 15 days', '15 days', 'recent', 'recently']):
+        return HARDCODED_SQL_QUERIES["show me transactions from last 15 days"]
     
     return None
 

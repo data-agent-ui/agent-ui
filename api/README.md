@@ -1,14 +1,20 @@
-# AI-Powered CRM Query System
+# CRM API - Two-Tier Query System
 
-A FastAPI-based CRM system that provides intelligent database querying capabilities using OpenAI's GPT-4o model. The system supports both hardcoded queries for instant responses and AI-generated queries for flexible data exploration.
+A FastAPI-based CRM system with intelligent two-tier query processing:
+1. **Tier 1**: Hardcoded queries for instant responses
+2. **Tier 2**: AI-generated SQL queries based on schema understanding
 
 ## 🚀 Features
 
-- **Dual Query System**: Fast hardcoded queries + AI-powered dynamic queries
-- **SQL Server Integration**: Direct connection to MumsAndBabies4SUTD database
-- **Structured JSON Responses**: Consistent API response format
-- **Performance Monitoring**: Built-in response time tracking
-- **Smart Query Detection**: Automatic routing between hardcoded and AI queries
+- **Two-Tier System**: Hardcoded queries first, then AI-generated SQL
+- **Intelligent Routing**: Automatically chooses the best approach
+- **Database Integration**: Connects to SQL Server database for real-time data access
+- **Schema Understanding**: AI understands the three core tables (pos_haud, pos_daud, pos_taud)
+- **Payment Type Focus**: Specialized for payment type reporting and analysis
+- **Greeting Support**: Handles small talk and greetings naturally
+- **Table Data Support**: Returns structured data for frontend consumption
+- **CORS Support**: Configured for React frontend integration
+- **Single Endpoint**: Only `/query` endpoint for simplicity
 
 ## 📋 Requirements
 
@@ -24,7 +30,6 @@ langchain-community
 langchain-openai
 openai
 sqlalchemy
-pandas
 python-dotenv
 pyodbc
 fastapi
@@ -49,7 +54,7 @@ python -m venv sqlqa_env
 
 **Windows:**
 ```bash
-sqlqa_env\Scripts\activate
+.\sqlqa_env\Scripts\Activate.ps1
 ```
 
 **Linux/Mac:**
@@ -63,235 +68,220 @@ pip install -r requirements.txt
 ```
 
 ### 5. Environment Configuration
-Create a `.env` file in the project root:
-```bash
-cp env_template.txt .env
-```
-
-Edit `.env` with your configuration:
+Create a `.env` file in the `api` directory:
 ```env
-# OpenAI API Key
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Database Configuration
-DB_SERVER=your_sql_server_name
+DB_SERVER=localhost
 DB_NAME=MumsAndBabies4SUTD
 DB_USER=your_username
 DB_PASSWORD=your_password
-
-# For Windows Authentication (leave DB_USER and DB_PASSWORD empty)
-# DB_SERVER=DESKTOP-L7BVFJN
-# DB_NAME=MumsAndBabies4SUTD
-# DB_USER=
-# DB_PASSWORD=
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-## 🚀 Running the API
+## 🚀 Usage
 
-### Start the Server
+### Start the API Server
 ```bash
+cd api
 python main.py
 ```
 
-The API will start on:
-- **URL**: http://localhost:5000
-- **Documentation**: http://localhost:5000/docs
-- **Alternative docs**: http://localhost:5000/redoc
+The API will be available at `http://localhost:5000`
 
-### API Endpoints
+## 📡 API Endpoints
 
-#### POST `/query`
-Process natural language queries and generate reports.
-
-**Request Body:**
-```json
+### Main Query Endpoint
+```
+POST /query
 {
-  "query": "show me outlet performance",
+  "query": "show me VISA payments",
   "include_table": true
 }
 ```
 
-**Response Format:**
+## 🎯 Two-Tier Query System
+
+### **Tier 1: Hardcoded Queries (Instant)**
+For predefined queries, the system returns instant responses:
+
+#### Collection Reports
+- `show me comprehensive collection report`
+- `generate payment summary report`
+
+#### Performance Reports
+- `show me outlet performance report`
+- `generate customer analysis report`
+
+#### Product Analysis
+- `what are the top selling products?`
+
+#### Master Data
+- `show me all customers`
+- `list all employees`
+- `show me product categories`
+- `list all outlets`
+- `show me payment types`
+- `list transaction statuses`
+
+#### Period-Based Transactions
+- `show me transactions from last month`
+- `show me transactions from last quarter`
+- `show me transactions from last year`
+- `show me transactions from last 15 days`
+- `show me recent transactions`
+
+### **Tier 2: AI-Generated Queries (Smart)**
+For new queries, the AI generates SQL based on schema understanding:
+
+#### Payment Analysis
+- `show me VISA payments`
+- `what are the MasterCard transactions?`
+- `show me Cash payments only`
+- `list Credit Card payments`
+
+#### Product Analysis
+- `what are the top products by sales?`
+- `show me products with highest quantities sold`
+- `list best performing items`
+
+#### Transaction Analysis
+- `show me recent transactions`
+- `list transactions from last month`
+- `show me customer balances`
+- `what about outstanding amounts?`
+
+#### Combined Analysis
+- `show me VISA payments with product details`
+- `list customers with outstanding balances`
+- `show me staff who made the most sales`
+
+## 🗄️ Database Schema Understanding
+
+The AI understands three core tables:
+
+### **pos_haud** → Transaction Header (Invoice Header)
+- **Purpose**: One row per invoice/receipt
+- **Key Fields**: `sa_transacno`, `sa_custno`, `sa_custname`, `sa_date`, `sa_TransacAmt`, `Total_Outstanding`
+
+### **pos_daud** → Transaction Details (Line Items)
+- **Purpose**: Line items per transaction (invoice lines/cart items)
+- **Key Fields**: `sa_transacno`, `dt_itemdesc`, `dt_qty`, `dt_price`, `dt_amt`, `dt_StaffName`
+
+### **pos_taud** → Transaction Payments
+- **Purpose**: Payment details per transaction (payment ledger)
+- **Key Fields**: `sa_transacno`, `pay_Desc`, `pay_actamt`, `pay_type`, `ItemSite_Code`
+
+### **Table Relationships**
+```
+pos_haud.sa_transacno = pos_daud.sa_transacno = pos_taud.sa_transacno
+```
+
+## 🔧 Query Processing Flow
+
+1. **Greeting Detection**: Checks if the query is a greeting or small talk
+2. **Tier 1 Check**: Uses LLM to intelligently match user queries with hardcoded queries
+3. **Fallback Matching**: If LLM unavailable, uses keyword matching only for period-based queries
+4. **Tier 2 Fallback**: If no hardcoded query match found, uses AI to generate SQL
+5. **Schema Analysis**: AI analyzes the three core tables
+6. **SQL Generation**: Creates appropriate SQL based on query intent
+7. **Database Execution**: Executes the generated SQL
+8. **Result Validation**: AI validates if results match user intent
+9. **Response Formatting**: Returns structured JSON response with debugging info
+
+## 📝 Response Format
+
 ```json
 {
   "success": true,
-  "query": "show me outlet performance",
-  "result": "Report completed successfully\n\nTotal Records: 2\nColumns: Outlet, Total_Transactions...",
+  "query": "show me VISA payments",
+  "result": "Based on your query, here are the VISA payment transactions:\n\nTotal VISA Payments: 45\nTotal Amount: $12,450.00\nAverage Payment: $276.67\n\nKey Insights:\n- VISA is the most popular payment method\n- Peak usage during business hours\n- Average transaction value is $276.67",
   "table": {
-    "columns": ["Outlet", "Total_Transactions", "Total_Revenue", ...],
+    "columns": ["Transaction_ID", "Customer_Name", "Amount", "Date", "Outlet"],
     "rows": [
       {
-        "Outlet": "MB01",
-        "Total_Transactions": 14757,
-        "Total_Revenue": 2683019.05,
-        ...
+        "Transaction_ID": "TXN001",
+        "Customer_Name": "John Smith",
+        "Amount": 150.00,
+        "Date": "2024-01-15",
+        "Outlet": "MB01"
       }
     ],
-    "title": "Outlet Performance Summary"
+    "title": "VISA Payment Transactions"
   },
-  "timestamp": "2025-09-15T15:30:00.000000"
+  "timestamp": "2024-01-15T10:30:00.000Z"
 }
 ```
 
-## 📊 Available Hardcoded Queries
+## 🧪 Testing
 
-The system includes pre-optimized queries for instant responses:
-
-### Customer Queries
-- `"show me customer analysis"`
-- `"list all customers with their total outstanding amounts"`
-
-### Payment & Collection Reports
-- `"generate a comprehensive collection report by payment type"`
-- `"payment summary report"`
-- `"generates a payment summary report grouped by outlet and payment type"`
-
-### Business Reports
-- `"show me outlet performance"`
-- `"show me employee performance"`
-- `"show me product sales analysis"`
-
-### Invoice Reports
-- `"list all invoices their total amount and how much has been paid by payment type"`
-
-### Database Information
-- `"show me database structure"`
-
-## 🤖 AI Query Examples
-
-For queries not in the hardcoded list, the AI agent generates SQL dynamically:
-
-- `"What are the top 5 customers by total spending?"`
-- `"Show me sales trends for the last 3 months"`
-- `"Which products have the highest profit margins?"`
-- `"Find customers who haven't made a purchase in 6 months"`
-- `"Compare outlet performance by region"`
-
-## ⚡ Performance
-
-### Hardcoded Queries
-- **Response Time**: 0.1-0.5 seconds
-- **Process**: Direct SQL execution
-- **Use Case**: Common business reports
-
-### AI Queries
-- **Response Time**: 5-10 seconds
-- **Process**: LLM + SQL generation + execution
-- **Use Case**: Custom analysis and exploration
-
-## 🏗️ Project Structure
-
-```
-AI-CRM/
-├── main.py                 # FastAPI server and main endpoint
-├── src/
-│   └── langchain_chain.py  # AI agent and database connection
-├── hardcoded_queries.py    # Pre-defined SQL queries
-├── requirements.txt        # Python dependencies
-├── env_template.txt       # Environment variables template
-├── README.md              # This file
-└── sqlqa_env/            # Virtual environment
-```
-
-## 🔧 Configuration
-
-### Database Connection
-The system supports both SQL Server authentication methods:
-- **Username/Password**: Set `DB_USER` and `DB_PASSWORD`
-- **Windows Authentication**: Leave `DB_USER` and `DB_PASSWORD` empty
-
-### Query Routing
-The system automatically determines whether to use:
-1. **Hardcoded queries** for exact matches and common patterns
-2. **AI agent** for complex or custom queries
-
-## 📝 Usage Examples
-
-### Using curl
+### **Two-Tier System Testing**
 ```bash
-curl -X POST "http://localhost:5000/query" \
-     -H "Content-Type: application/json" \
-     -d '{"query": "show me outlet performance"}'
+cd api
+python test_two_tier_system.py
 ```
 
-### Using Python requests
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:5000/query",
-    json={"query": "show me outlet performance", "include_table": True}
-)
-data = response.json()
-print(data["table"]["rows"])
+### **Period-Based Queries Testing**
+```bash
+cd api
+python test_period_queries.py
 ```
 
-### Using the Interactive Docs
-1. Navigate to http://localhost:5000/docs
-2. Click on the `/query` endpoint
-3. Click "Try it out"
-4. Enter your query in the request body
-5. Click "Execute"
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**1. Database Connection Error**
-- Verify SQL Server is running
-- Check ODBC Driver 18 installation
-- Validate connection credentials in `.env`
-
-**2. OpenAI API Error**
-- Verify API key is correct and has credits
-- Check internet connectivity
-
-**3. Slow Response Times**
-- Hardcoded queries should be fast (< 1 second)
-- AI queries take longer (5-10 seconds) due to LLM processing
-
-**4. Empty Results**
-- Check database has data in relevant tables
-- Verify query syntax matches database schema
-
-### Debug Information
-The API provides detailed console output:
-- Query type detection (Hardcoded vs AI)
-- Response time measurements
-- Database execution details
-- Error messages and stack traces
-
-## 📈 Monitoring
-
-The system logs performance metrics:
+### **LLM Query Matching Testing**
+```bash
+cd api
+python test_llm_query_matching.py
 ```
-⚡ HARDCODED QUERY: show me outlet performance
-Database execution time: 0.23 seconds
-TOTAL RESPONSE TIME: 0.28 seconds
+
+## 🎯 Key Benefits
+
+1. **✅ Instant Responses**: Hardcoded queries provide immediate results
+2. **✅ Flexible**: AI handles any new query type
+3. **✅ Intelligent**: Understands payment types, products, and transactions
+4. **✅ Accurate**: Proper table relationships and field mappings
+5. **✅ Fast**: Optimized for both speed and flexibility
+6. **✅ Schema-Aware**: AI understands the three core tables
+
+## 🏗️ Architecture
+
+```
+User Query → Greeting Check → Hardcoded Query Lookup → Database → Response
+     ↓
+AI Query Analysis → Schema Understanding → SQL Generation → Database → Response
+```
+
+The system intelligently routes between hardcoded queries for instant responses and AI-generated queries for flexible data exploration.
+
+## 📁 Project Structure
+
+```
+api/
+├── main.py                      # Main FastAPI application
+├── hardcoded_queries.py         # Predefined SQL queries with LLM matching (Tier 1)
+├── src/
+│   └── smart_query_agent.py     # AI query agent with validation (Tier 2)
+├── test_two_tier_system.py      # Test script for two-tier system
+├── test_period_queries.py       # Test script for period-based queries
+├── test_llm_query_matching.py   # Test script for LLM query matching
+├── requirements.txt             # Python dependencies
+├── .env                         # Environment configuration
+└── README.md                    # This file
 ```
 
 ## 🔒 Security
 
-- API keys stored in environment variables
-- Database credentials in `.env` file (not committed to version control)
-- SQL injection protection through parameterized queries
+- Database credentials stored in environment variables
+- OpenAI API key secured in environment
+- CORS configured for specific origins
 - Input validation through Pydantic models
+- SQL injection protection through parameterized queries
 
-## 🤝 Contributing
+## 🚀 Deployment
 
-1. Fork the repository
-2. Create a feature branch
-3. Add new hardcoded queries to `hardcoded_queries.py`
-4. Test your changes
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
+The API can be deployed using:
+- **Local Development**: `python main.py`
+- **Production**: Use a WSGI server like Gunicorn with Uvicorn workers
+- **Docker**: Containerize the application for easy deployment
+- **Cloud**: Deploy to AWS, Azure, or Google Cloud Platform
 
 ## 📞 Support
 
-For issues and questions:
-1. Check the troubleshooting section
-2. Review console debug output
-3. Create an issue in the repository
+For issues or questions, please check the test script and ensure all dependencies are properly installed.

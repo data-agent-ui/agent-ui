@@ -26,23 +26,22 @@ try:
     from pydantic import BaseModel
     from typing import List, Dict, Any, Optional
     import uvicorn
-    import pandas as pd
     import re
     
     # Add src to path
     sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
     
-    from langchain_chain import CRMQueryAgent
     from hardcoded_queries import get_hardcoded_query
+    from src.smart_query_agent import SmartQueryAgent
     
 except ImportError as e:
     print(f"Import Error: {e}")
     print("Please check your dependencies and virtual environment")
     sys.exit(1)
 
-# Global agent and database
-agent = None
+# Global database and agent
 db = None
+smart_query_agent = None
 
 def get_database_connection():
     """Get lightweight database connection for hardcoded queries"""
@@ -158,22 +157,30 @@ def convert_db_results_to_table(result_text: str, query: str) -> Optional[TableD
                 if not columns or len(columns) != len(parsed_results[0]):
                     columns = [f"Column_{i+1}" for i in range(len(parsed_results[0]))]
                 
-                # Create DataFrame
-                df = pd.DataFrame(parsed_results, columns=columns)
-                
-                # Format numeric columns
-                for col in df.columns:
-                    if df[col].dtype == 'object':
-                        # Try to convert to numeric
-                        try:
-                            df[col] = pd.to_numeric(df[col], errors='ignore')
-                        except:
-                            pass
+                # Format numeric columns (without pandas)
+                formatted_results = []
+                for row in parsed_results:
+                    formatted_row = []
+                    for i, value in enumerate(row):
+                        if i < len(columns):
+                            # Try to format numeric values
+                            try:
+                                if isinstance(value, (int, float)):
+                                    formatted_row.append(value)
+                                elif isinstance(value, str) and value.replace('.', '').replace('-', '').isdigit():
+                                    formatted_row.append(float(value))
+                                else:
+                                    formatted_row.append(value)
+                            except:
+                                formatted_row.append(value)
+                        else:
+                            formatted_row.append(value)
+                    formatted_results.append(formatted_row)
                 
                 # Convert to table format - ensure all values are strings
-                headers = df.columns.tolist()
+                headers = columns
                 rows = []
-                for row in df.values.tolist():
+                for row in formatted_results:
                     # Convert all values to strings for Pydantic compatibility
                     string_row = [str(value) for value in row]
                     rows.append(string_row)
@@ -209,10 +216,13 @@ def convert_db_results_to_table(result_text: str, query: str) -> Optional[TableD
 def extract_column_names_from_sql(sql_text: str) -> List[str]:
     """Extract column names from SQL SELECT statement"""
     try:
-        # Look for SELECT ... FROM pattern
-        select_match = re.search(r'SELECT\s+(.*?)\s+FROM', sql_text, re.IGNORECASE | re.DOTALL)
-        if select_match:
-            select_clause = select_match.group(1)
+        # Find all SELECT statements
+        select_matches = list(re.finditer(r'SELECT\s+(.*?)\s+FROM', sql_text, re.IGNORECASE | re.DOTALL))
+        
+        if select_matches:
+            # Use the last SELECT statement (main query after CTEs)
+            main_select = select_matches[-1]
+            select_clause = main_select.group(1)
             
             # Split by commas and extract column names
             columns = []
@@ -265,6 +275,14 @@ def determine_table_title(query: str) -> str:
         return "Product Sales Analysis"
     elif "outlet" in query_lower and "performance" in query_lower:
         return "Outlet Performance Summary"
+    elif "transactions from last month" in query_lower or "monthly" in query_lower:
+        return "Transactions from Last Month"
+    elif "transactions from last quarter" in query_lower or "quarterly" in query_lower:
+        return "Transactions from Last Quarter"
+    elif "transactions from last year" in query_lower or "yearly" in query_lower:
+        return "Transactions from Last Year"
+    elif "transactions from last 15 days" in query_lower or "recent" in query_lower:
+        return "Recent Transactions (Last 15 Days)"
     elif "report" in query_lower:
         return "Business Report"
     else:
@@ -536,6 +554,88 @@ Try asking:
 
 How can I assist you today?"""
 
+def process_template_query(sql_query: str, user_query: str) -> str:
+    """Process template queries by replacing placeholders with actual values"""
+    import re
+    
+    # Check if this is a template query with [PAYMENT_TYPE] placeholder
+    if '[PAYMENT_TYPE]' in sql_query:
+        # Extract payment type from user query
+        payment_type = extract_payment_type_from_query(user_query)
+        if payment_type:
+            # Replace the placeholder with the actual payment type
+            sql_query = sql_query.replace('[PAYMENT_TYPE]', payment_type)
+            print(f"🔄 Template query modified: Payment type '{payment_type}' inserted")
+        else:
+            print("⚠️ Warning: Could not extract payment type from query, using default")
+            sql_query = sql_query.replace('[PAYMENT_TYPE]', 'CASH')  # Default fallback
+    
+    return sql_query
+
+def extract_payment_type_from_query(user_query: str) -> str:
+    """Extract payment type from user query using pattern matching"""
+    query_lower = user_query.lower().strip()
+    
+    # Comprehensive payment types based on actual database data
+    payment_patterns = {
+        # Major payment types
+        'VISA': ['visa', 'vs', 'visa card', 'visa payment', 'visa transactions'],
+        'MASTER': ['master', 'ms', 'mastercard', 'master card', 'mastercard payment', 'mastercard transactions'],
+        'CASH': ['cash', 'cs', 'cash payment', 'cash transactions'],
+        'AMEX': ['amex', 'ax', 'american express', 'amex payment', 'amex transactions'],
+        'PAYPAL': ['paypal', 'paypal payment', 'paypal transactions'],
+        
+        # PayNow variants
+        'PAYNOW NORMAL': ['paynow', 'payn', 'paynow normal', 'paynow payment'],
+        'PAYNOW ASPIRE': ['paynow aspire', 'paynas', 'paynow aspire payment'],
+        'PAYNOW OCBC': ['paynow ocbc', 'paynoc', 'ocbc paynow'],
+        
+        # Digital wallets and platforms
+        'SHOPBACK': ['shopback', 'shpb', 'shopback payment'],
+        'PREPAID': ['prepaid', 'pp', 'prepaid payment', 'prepaid card'],
+        'ATOME': ['atome', 'atome payment'],
+        'WECHAT': ['wechat', 'wechat pay', 'wechat payment'],
+        'PAYLAH': ['paylah', 'payl', 'paylah payment'],
+        'GRABPAY': ['grabpay', 'grab', 'grab pay', 'grab payment'],
+        
+        # Banking and transfers
+        'BANK TRANSFER': ['bank transfer', 'bnkt', 'wire transfer', 'bank payment', 'transfer'],
+        'NETS': ['nets', 'nt', 'nets payment'],
+        'STRIPE': ['stripe', 'str', 'stripe payment'],
+        
+        # Vouchers and credits
+        'VOUCHER': ['voucher', 'vc', 'voucher payment', 'gift voucher'],
+        'CREDIT NOTE': ['credit note', 'cn', 'credit note payment'],
+        
+        # Special cases
+        'OLD BILL': ['old bill', 'ob', 'old bill payment'],
+        'SUPER NANNY': ['super nanny', 'sn', 'super nanny payment'],
+        'CHILLI PADI': ['chilli padi', 'chilli', 'chilli padi payment'],
+        'MUMMY MARKET': ['mummy market', 'mm', 'mummy market payment'],
+        'LAZADA': ['lazada', 'lzd', 'lazada payment'],
+        'JCB': ['jcb', 'jcb payment'],
+        'LYC': ['lyc', 'lyc payment'],
+        'GST ABSORBED': ['gst absorbed', 'gstab', 'gst absorbed payment']
+    }
+    
+    # Find the best match
+    for payment_type, patterns in payment_patterns.items():
+        for pattern in patterns:
+            if pattern in query_lower:
+                print(f"🎯 Payment type matched: '{pattern}' → '{payment_type}'")
+                return payment_type
+    
+    # If no specific match found, try to extract any capitalized word that might be a payment type
+    words = user_query.split()
+    for word in words:
+        if word.isupper() and len(word) > 2:
+            print(f"🎯 Payment type extracted from uppercase: '{word}'")
+            return word
+    
+    print(f"⚠️ No payment type found in query: '{user_query}'")
+    return None
+
+
 @app.post("/query", response_model=Response)
 async def process_query(query: Query):
     """Process questions and generate reports"""
@@ -565,9 +665,12 @@ async def process_query(query: Query):
         hardcoded_sql = get_hardcoded_query(query.query)
         
         if hardcoded_sql:
+            # Check if this is a template query that needs modification
+            hardcoded_sql = process_template_query(hardcoded_sql, query.query)
             # Use hardcoded SQL query for instant response
             query_start_time = time.time()
-            print(f"⚡ HARDCODED QUERY: {query.query}")
+            print(f"⚡QUERY: {query.query}")
+            print(f"🔧 HARDCODED SQL: {hardcoded_sql}")
             
             # Get lightweight database connection (no LLM, no agent)
             db_conn = get_database_connection()
@@ -601,6 +704,8 @@ async def process_query(query: Query):
                         columns = ["Outlet", "Num_Transactions", "Total_Revenue", "Average_Transaction_Value", "Unique_Customers", "First_Transaction", "Latest_Transaction"]
                     elif "customer analysis" in query.query.lower():
                         columns = ["Cust_No", "Cust_code", "Cust_name", "Cust_phone1", "Cust_email", "Outlet", "Cust_JoinDate", "oustanding_payment", "Outstanding_Amount", "Cust_Point", "Loyalty_Points", "Status"]
+                    elif any(word in query.query.lower() for word in ["transactions from last", "monthly", "quarterly", "yearly", "recent"]):
+                        columns = ["sa_transacno", "sa_date", "sa_custname", "sa_totamt", "sa_totdisc", "sa_totgst", "sa_status", "Outlet"]
                     else:
                         columns = [f"Column_{i+1}" for i in range(10)]  # Default fallback
                 
@@ -624,6 +729,7 @@ async def process_query(query: Query):
                         rows.append(row_dict)
                     
                     result_text = f"Report completed successfully\n\n"
+                    result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
                     result_text += f"Total Records: {len(rows)}\n"
                     result_text += f"Columns: {', '.join(columns)}"
                     include_table = True
@@ -649,6 +755,7 @@ async def process_query(query: Query):
                                 rows.append(row_dict)
                             
                             result_text = f"Report completed successfully\n\n"
+                            result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
                             result_text += f"Total Records: {len(rows)}\n"
                             result_text += f"Columns: {', '.join(columns)}"
                             include_table = True
@@ -698,6 +805,7 @@ async def process_query(query: Query):
                                     rows.append(row_dict)
                                 
                                 result_text = f"Report completed successfully\n\n"
+                                result_text += f"SQL Query Used:\n{hardcoded_sql}\n\n"
                                 result_text += f"Total Records: {len(rows)}\n"
                                 result_text += f"Columns: {', '.join(columns)}"
                                 include_table = True
@@ -710,7 +818,7 @@ async def process_query(query: Query):
                                 
                                 # Final fallback - create empty structure
                                 rows = []
-                                result_text = f"Report completed with parsing issues\n\nRaw Data: {result_str[:200]}..."
+                                result_text = f"Report completed with parsing issues\n\nSQL Query Used:\n{hardcoded_sql}\n\nRaw Data: {result_str[:200]}..."
                                 include_table = True
                                 parsed_results = rows
                     
@@ -721,39 +829,42 @@ async def process_query(query: Query):
                         
                         # Final fallback - create empty structure
                         rows = []
-                        result_text = f"Report completed with parsing issues\n\nRaw Data: {result_str[:200]}..."
+                        result_text = f"Report completed with parsing issues\n\nSQL Query Used:\n{hardcoded_sql}\n\nRaw Data: {result_str[:200]}..."
                         include_table = True
                         parsed_results = rows
                     
             except Exception as e:
-                result_text = f"Error processing results: {str(e)}"
+                result_text = f"Error processing results: {str(e)}\n\nSQL Query Used:\n{hardcoded_sql}"
                 include_table = False
                 parsed_results = None
         else:
-            # Process the query using AI agent with smart detection
+            # No hardcoded query found - use Smart Query Agent to generate SQL
             query_start_time = time.time()
-            print(f"AI QUERY: {query.query}")
+            print(f"🤖 AI QUERY: {query.query}")
+            print(f"🧠 AI-GENERATED SQL: Will be generated by SmartQueryAgent")
             
-            # Initialize AI agent only when needed
-            if not agent:
+            # Initialize Smart Query Agent only when needed
+            if not smart_query_agent:
                 try:
                     init_start_time = time.time()
-                    print("Initializing CRM Agent for AI query...")
-                    agent = CRMQueryAgent()
+                    print("Initializing Smart Query Agent for AI query...")
+                    smart_query_agent = SmartQueryAgent()
                     init_time = time.time() - init_start_time
-                    print(f"Agent initialization time: {init_time:.2f} seconds")
+                    print(f"Smart Query Agent initialization time: {init_time:.2f} seconds")
                 except Exception as e:
                     return Response(
                         success=False,
                         query=query.query,
-                        result=f"Error initializing CRM Agent: {str(e)}",
+                        result=f"Error initializing Smart Query Agent: {str(e)}",
                         timestamp=datetime.now().isoformat()
                     )
             
-            result = agent.query(query.query)
+            result = smart_query_agent.query(query.query)
             result_text = str(result)
+            
             query_time = time.time() - query_start_time
             print(f"Total AI processing time: {query_time:.2f} seconds")
+            print(f"🤖 AI Response: {result_text[:200]}...")
             
             # Determine if we should include table data
             include_table = query.include_table or should_include_table(query.query)
