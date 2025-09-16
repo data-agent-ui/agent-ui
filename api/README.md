@@ -70,12 +70,37 @@ pip install -r requirements.txt
 ### 5. Environment Configuration
 Create a `.env` file in the `api` directory:
 ```env
+# OpenAI API Key (Required)
+OPENAI_API_KEY=your_openai_api_key
+
+# SQL Server Database Connection (Required)
 DB_SERVER=localhost
 DB_NAME=MumsAndBabies4SUTD
 DB_USER=your_username
 DB_PASSWORD=your_password
-OPENAI_API_KEY=your_openai_api_key
+
+# SQL Driver Configuration (Optional)
+DB_DRIVER=ODBC+Driver+18+for+SQL+Server
+DB_CONNECTION_TIMEOUT=30
+DB_COMMAND_TIMEOUT=60
+DB_TRUST_SERVER_CERTIFICATE=yes
+DB_MAX_STRING_LENGTH=1000
 ```
+
+### SQL Driver Configuration Options
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_DRIVER` | `ODBC+Driver+18+for+SQL+Server` | SQL Server ODBC driver name |
+| `DB_CONNECTION_TIMEOUT` | `30` | Connection timeout in seconds |
+| `DB_COMMAND_TIMEOUT` | `60` | Command timeout in seconds |
+| `DB_TRUST_SERVER_CERTIFICATE` | `yes` | Trust server certificate (yes/no) |
+| `DB_MAX_STRING_LENGTH` | `1000` | Maximum string length for results |
+
+**Common Driver Options:**
+- `ODBC+Driver+18+for+SQL+Server` (Recommended)
+- `ODBC+Driver+17+for+SQL+Server`
+- `SQL+Server+Native+Client+11.0`
 
 ## 🚀 Usage
 

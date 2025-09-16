@@ -56,18 +56,27 @@ def get_database_connection():
             username = os.getenv("DB_USER", "")
             password = os.getenv("DB_PASSWORD", "")
             
-            # Build connection string
+            # Get SQL driver configuration from environment
+            driver = os.getenv("DB_DRIVER", "ODBC+Driver+18+for+SQL+Server")
+            connection_timeout = os.getenv("DB_CONNECTION_TIMEOUT", "30")
+            command_timeout = os.getenv("DB_COMMAND_TIMEOUT", "60")
+            trust_cert = os.getenv("DB_TRUST_SERVER_CERTIFICATE", "yes")
+            
+            # Build connection string with configurable parameters
             if username and password:
-                database_uri = f"mssql+pyodbc://{username}:{password}@{server}/{database}?driver=ODBC+Driver+18+for+SQL+Server&Connection+Timeout=30&Command+Timeout=60&TrustServerCertificate=yes"
+                database_uri = f"mssql+pyodbc://{username}:{password}@{server}/{database}?driver={driver}&Connection+Timeout={connection_timeout}&Command+Timeout={command_timeout}&TrustServerCertificate={trust_cert}"
             else:
-                database_uri = f"mssql+pyodbc://@{server}/{database}?driver=ODBC+Driver+18+for+SQL+Server&trusted_connection=yes&Connection+Timeout=30&Command+Timeout=60&TrustServerCertificate=yes"
+                database_uri = f"mssql+pyodbc://@{server}/{database}?driver={driver}&trusted_connection=yes&Connection+Timeout={connection_timeout}&Command+Timeout={command_timeout}&TrustServerCertificate={trust_cert}"
+            
+            # Get max string length from environment
+            max_string_length = int(os.getenv("DB_MAX_STRING_LENGTH", "1000"))
             
             # Create lightweight database connection
             db = SQLDatabase.from_uri(
                 database_uri, 
                 include_tables=[],  # Don't auto-reflect tables
                 sample_rows_in_table_info=0,  # Don't sample data
-                max_string_length=1000
+                max_string_length=max_string_length
             )
             db._dialect = "mssql"
             print("Database connection established for hardcoded queries")

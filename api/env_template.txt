@@ -2,10 +2,17 @@
 OPENAI_API_KEY=your_openai_api_key_here
 
 # SQL Server Database Connection (Required)
-DB_SERVER=
+DB_SERVER=localhost
 DB_NAME=MumsAndBabies4SUTD
 DB_USER=your_username
 DB_PASSWORD=your_password
+
+# SQL Driver Configuration
+DB_DRIVER=ODBC+Driver+18+for+SQL+Server
+DB_CONNECTION_TIMEOUT=30
+DB_COMMAND_TIMEOUT=60
+DB_TRUST_SERVER_CERTIFICATE=yes
+DB_MAX_STRING_LENGTH=1000
 
 # Alternative: Use Windows Authentication (leave DB_USER and DB_PASSWORD empty)
 # DB_SERVER=localhost
