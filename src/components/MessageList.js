@@ -1,8 +1,19 @@
 import React from 'react';
-import ChartMessage from './ChartMessage.js';
-import MarkdownRenderer from './MarkdownRenderer.js';
-import { extractChartData, extractTextWithoutChart, formatChartData } from '../utils/chartUtils.js';
+import ChartMessage from './ChartMessage';
+import MarkdownRenderer from './MarkdownRenderer';
+import { extractChartData, extractTextWithoutChart, formatChartData } from '../utils/chartUtils';
 import './MessageList.css';
+
+const generateMarkdownTable = (title, columns, rows) => {
+  let md = `## ${title}\n\n`;
+  md += `| ${columns.join(' | ')} |\n`;
+  md += `| ${columns.map(() => '---').join(' | ')} |\n`;
+  rows.forEach(row => {
+    const rowData = columns.map(col => row[col] !== undefined ? row[col] : '');
+    md += `| ${rowData.join(' | ')} |\n`;
+  });
+  return md;
+};
 
 const MessageList = ({ messages, isStreaming, streamingContent }) => {
   const renderMessageContent = (message) => {
@@ -10,7 +21,7 @@ const MessageList = ({ messages, isStreaming, streamingContent }) => {
     if (message.chart) {
       // New structure: separate response and chart fields
       const formattedChartData = formatChartData(message.chart.chartData);
-      
+
       return (
         <div className="message-with-chart">
           {message.response && (
@@ -18,22 +29,29 @@ const MessageList = ({ messages, isStreaming, streamingContent }) => {
               <MarkdownRenderer content={message.response} />
             </div>
           )}
-          <ChartMessage 
-            chartData={formattedChartData} 
-            chartType={message.chart.type} 
+          <ChartMessage
+            chartData={formattedChartData}
+            chartType={message.chart.type}
           />
         </div>
       );
     }
-    
+
+    if (message.table) {
+      // Handle table display
+      const { title, columns, rows } = message.table;
+      const markdown = generateMarkdownTable(title, columns, rows);
+      return <MarkdownRenderer content={markdown} />;
+    }
+
     // Handle legacy structure or plain text/markdown
     const content = message.response || message.content || '';
     const chartInfo = extractChartData(content);
-    
+
     if (chartInfo.hasChart) {
       const textWithoutChart = extractTextWithoutChart(content);
       const formattedChartData = formatChartData(chartInfo.chartData);
-      
+
       return (
         <div className="message-with-chart">
           {textWithoutChart && (
@@ -41,16 +59,17 @@ const MessageList = ({ messages, isStreaming, streamingContent }) => {
               <MarkdownRenderer content={textWithoutChart} />
             </div>
           )}
-          <ChartMessage 
-            chartData={formattedChartData} 
-            chartType={chartInfo.chartType} 
+          <ChartMessage
+            chartData={formattedChartData}
+            chartType={chartInfo.chartType}
           />
         </div>
       );
     }
-    
+
     return <MarkdownRenderer content={content} />;
   };
+
 
   return (
     <div className="message-list">
@@ -67,7 +86,7 @@ const MessageList = ({ messages, isStreaming, streamingContent }) => {
           </div>
         </div>
       ))}
-      
+
       {isStreaming && streamingContent && (
         <div className="message assistant streaming">
           <div className="message-content">

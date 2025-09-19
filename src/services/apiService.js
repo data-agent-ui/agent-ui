@@ -4,8 +4,8 @@ class ApiService {
   // Health check
   async checkHealth() {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`);
-      return await response.json();
+      const response = await fetch(`${API_BASE_URL}/docs`);
+      return { status: 'ok' };
     } catch (error) {
       throw new Error('Failed to connect to server');
     }
@@ -14,12 +14,12 @@ class ApiService {
   // Non-streaming chat
   async sendMessage(message) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const response = await fetch(`${API_BASE_URL}/query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ query: message }),
       });
 
       if (!response.ok) {
@@ -41,21 +41,21 @@ class ApiService {
     }
   }
 
-  // Streaming chat using EventSource
+  // Streaming chat using EventSource (simulated for non-streaming API)
   createStreamingConnection(message, onChunk, onComplete, onError) {
-    // Since EventSource doesn't support POST, we'll use fetch with ReadableStream
-    return fetch(`${API_BASE_URL}/api/chat/stream`, {
+    // Use regular query endpoint since API doesn't support streaming
+    return fetch(`${API_BASE_URL}/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ query: message }),
     })
     .then(response => {
       if (!response.ok) {
-        // Log detailed error information for streaming
+        // Log detailed error information
         response.json().then(errorData => {
-          console.error('Streaming API Error Details:', {
+          console.error('API Error Details:', {
             status: response.status,
             statusText: response.statusText,
             url: response.url,
@@ -63,7 +63,7 @@ class ApiService {
             timestamp: new Date().toISOString()
           });
         }).catch(() => {
-          console.error('Streaming API Error (no JSON):', {
+          console.error('API Error (no JSON):', {
             status: response.status,
             statusText: response.statusText,
             url: response.url,
@@ -73,56 +73,18 @@ class ApiService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      const readStream = () => {
-        reader.read().then(({ done, value }) => {
-          if (done) {
-            return;
-          }
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                
-                switch (data.type) {
-                  case 'chunk':
-                    onChunk(data.content);
-                    break;
-                  case 'complete':
-                    // Handle new response structure with separate fields
-                    onComplete({
-                      response: data.response,
-                      chart: data.chart,
-                      table: data.table,
-                      map: data.map,
-                      dashboard: data.dashboard
-                    });
-                    return;
-                  case 'error':
-                    console.error('Streaming Error from Server:', data.error);
-                    onError(data.error);
-                    return;
-                }
-              } catch (e) {
-                console.error('Error parsing SSE data:', e, 'Raw line:', line);
-              }
-            }
-          }
-
-          readStream();
-        }).catch(error => {
-          console.error('Streaming Read Error:', error);
-          onError(error);
-        });
-      };
-
-      readStream();
+      // Handle non-streaming response
+      return response.json();
+    })
+    .then(data => {
+      // Simulate streaming by calling onComplete with the full response
+      onComplete({
+        response: data.result,
+        table: data.table,
+        chart: null,
+        map: null,
+        dashboard: null
+      });
     })
     .catch(error => {
       console.error('Streaming Connection Error:', error);
@@ -130,50 +92,14 @@ class ApiService {
     });
   }
 
-  // Get conversation history
+  // Get conversation history (not supported by API, return empty)
   async getHistory() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/history`);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('History API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-          errorData: errorData,
-          timestamp: new Date().toISOString()
-        });
-        throw new Error(`Failed to get history: HTTP ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Get History Error:', error);
-      throw error;
-    }
+    return { history: [] };
   }
 
-  // Clear conversation history
+  // Clear conversation history (not supported by API, return success)
   async clearHistory() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/clear`, {
-        method: 'POST',
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Clear History API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-          errorData: errorData,
-          timestamp: new Date().toISOString()
-        });
-        throw new Error(`Failed to clear history: HTTP ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Clear History Error:', error);
-      throw error;
-    }
+    return { success: true };
   }
 }
 

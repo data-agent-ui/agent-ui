@@ -10,8 +10,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #1a1a1a;
-  color: #e5e5e5;
+  background-color: #0f172a;
+  color: #f8fafc;
   line-height: 1.6;
 }
 
@@ -31,7 +31,7 @@ body {
   margin-left: 250px;
   height: 100vh;
   overflow-y: auto;
-  background-color: #1a1a1a;
+  background-color: #0f172a;
 }
 
 /* Global button styles */
@@ -41,22 +41,36 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 button:focus-visible {
-  outline: 2px solid #4b5563;
+  outline: 2px solid #667eea;
   outline-offset: 2px;
 }
 
 /* Global input styles */
-input, textarea {
+input,
+textarea {
   font-family: inherit;
   font-size: inherit;
+  background-color: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 0.5rem;
 }
 
-input:focus, textarea:focus {
+input:focus,
+textarea:focus {
   outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
 }
 
 /* Loading animation */
@@ -94,11 +108,11 @@ input:focus, textarea:focus {
   .main-content {
     margin-left: 0;
   }
-  
+
   .App {
     flex-direction: column;
   }
-  
+
   .left-menu {
     position: relative;
     width: 100%;
