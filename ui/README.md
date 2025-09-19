@@ -1,4 +1,3 @@
- HEAD
 # AI Assistant UI
 
 A modern React-based chat interface for interacting with an AI assistant. This application provides a clean, responsive UI for chatting with an AI assistant that supports both streaming and non-streaming responses, interactive charts, markdown rendering, and a professional dark theme.
@@ -267,10 +266,3 @@ For issues and questions:
 2. Review the browser console for errors
 3. Ensure the API server is running and accessible
 4. Verify all dependencies are installed correctly
-
-# crm-agent
-crm/main
-
-
-
-

@@ -1,0 +1,35 @@
+.chart-message {
+  margin: 1rem 0;
+}
+
+.chart-container {
+  background-color: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  height: 400px;
+  width: 100%;
+  max-width: 600px;
+  transition: all 0.3s ease;
+}
+
+.chart-container:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chart-container {
+    height: 300px;
+    padding: 0.75rem;
+  }
+}
+
+/* Ensure chart is responsive */
+.chart-container canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
