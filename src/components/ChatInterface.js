@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import MessageList from './MessageList';
-import MessageInput from './MessageInput';
-import apiService from '../services/apiService';
+import MessageList from './MessageList.js';
+import MessageInput from './MessageInput.js';
+import apiService from '../services/apiService.js';
 import './ChatInterface.css';
 
 const ChatInterface = () => {
