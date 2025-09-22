@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import LeftMenu from './components/LeftMenu';
-import Dashboard from './components/Dashboard';
-import ChatInterface from './components/ChatInterface';
+import LeftMenu from './components/LeftMenu.js';
+import Dashboard from './components/Dashboard.js';
+import ChatInterface from './components/ChatInterface.js';
+
+
 import './App.css';
 
 function App() {
@@ -21,6 +23,9 @@ function App() {
         return <Dashboard />;
     }
   };
+
+
+
 
   return (
     <div className="App">
