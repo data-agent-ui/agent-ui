@@ -1,6 +1,6 @@
 // components/AgentConfig.jsx
 import React, { useState } from 'react';
-import apiService from '../services/apiService';
+import apiService from '../services/apiService.js';
 import './AgentConfig.css';
 
 export default function AgentConfig({ onConnected, onDisconnected, defaultMode = 'http' }) {

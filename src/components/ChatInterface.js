@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import MessageList from './MessageList';
-import MessageInput from './MessageInput';
-import apiService from '../services/apiService';
+import MessageList from './MessageList.js';
+import MessageInput from './MessageInput.js';
+import apiService from '../services/apiService.js';
 import './ChatInterface.css';
 import {
   generateMockApiResponse, generateMockLineChart,
   generateMockBarChart,
   generateMockDoughnutChart,
   generateMockPieChart
-} from '../utils/testResponse';
+} from '../utils/testResponse.js';
 import { IoChatboxOutline } from "react-icons/io5";
 
 const ChatInterface = ({ connectionStatus, setConnectionStatus, setActiveItem }) => {
