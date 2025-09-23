@@ -1,0 +1,168 @@
+.agent-config {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #0f172a;
+    min-height: 100vh;
+}
+
+.agent-config__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1e293b;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.agent-config__header h1 {
+    color: #f8fafc;
+    font-size: 2rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 700;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+}
+
+.badge.connected {
+    background: rgba(16, 163, 127, 0.12);
+    border-color: rgba(16, 163, 127, 0.35);
+    color: #10a37f;
+}
+
+.badge.checking {
+    background: rgba(234, 179, 8, 0.12);
+    border-color: rgba(234, 179, 8, 0.35);
+    color: #fbbf24;
+}
+
+.badge.error {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #ef4444;
+}
+
+.agent-config__tabs {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0 12px;
+}
+
+.agent-config__tabs .tab {
+    background: #0f172a;
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.agent-config__tabs .tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-color: transparent;
+}
+
+.agent-config__form {
+    display: grid;
+    gap: 12px;
+    background: #1e293b;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.agent-config__form label {
+    display: grid;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
+
+.agent-config__form input[type="text"],
+.agent-config__form input[type="password"] {
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 8px;
+    padding: 10px 12px;
+    outline: none;
+}
+
+.agent-config__form input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  white-space: nowrap; /* ✅ ensures text doesn’t break */
+}
+
+.checkbox {
+  flex-wrap: nowrap;
+}
+
+
+.checkbox input[type="checkbox"] {
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.checkbox span {
+  line-height: 1; /* optional tweak to align perfectly */
+}
+
+
+
+.note {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.form-error {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    transform: translateY(-1px);
+}

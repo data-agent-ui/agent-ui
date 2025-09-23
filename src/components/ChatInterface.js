@@ -1,19 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import MessageList from './MessageList.js';
-import MessageInput from './MessageInput.js';
-import apiService from '../services/apiService.js';
+import MessageList from './MessageList';
+import MessageInput from './MessageInput';
+import apiService from '../services/apiService';
 import './ChatInterface.css';
+import {
+  generateMockApiResponse, generateMockLineChart,
+  generateMockBarChart,
+  generateMockDoughnutChart,
+  generateMockPieChart
+} from '../utils/testResponse';
+import { IoChatboxOutline } from "react-icons/io5";
 
-const ChatInterface = () => {
+const ChatInterface = ({ connectionStatus, setConnectionStatus, setActiveItem }) => {
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('checking');
+  // const [connectionStatus, setConnectionStatus] = useState('checking');
   const [shouldFocusInput, setShouldFocusInput] = useState(false);
   const messagesEndRef = useRef(null);
   const [showMockButton, setShowMockButton] = useState(true);
+  const [showChartMockButtons, setShowChartMockButtons] = useState(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,6 +69,10 @@ const ChatInterface = () => {
   };
 
   const handleSendMessage = async (messageText) => {
+    if (connectionStatus !== 'connected') {
+      setError('Not connected. Configure connection first.');
+      return;
+    }
     if (!messageText.trim()) return;
 
     setError(null);
@@ -145,85 +157,55 @@ const ChatInterface = () => {
 
   // ✅ New handler to add mock report message
   const handleGenerateMockApiResponse = () => {
-    const mockMessage = {
-      role: 'assistant',
-      response: "Report completed successfully\n\nTotal Records: 41\nColumns: Outlet, Payment_Type, Num_Transactions, Num_New_Sales, Num_Balance_Payments, New_Sales_Amount, Balance_Paid_Amount, Total_Amount, pay_GST, Tax_Collected, Net_Amount\nSample Data: {'Outlet': 'MB01', 'Payment_Type': 'VISA', 'Num_Transactions': 846, 'Num_New_Sales': 0, 'Num_Balance_Payments': 0, 'New_Sales_Amount': 0.0, 'Balance_Paid_Amount': 0.0, 'Total_Amount': 318360.61, 'pay_GST': 26172.60, 'Tax_Collected': 292188.01, 'Net_Amount': 292188.01}",
-      table: {
-        title: "Collection Report by Payment Type",
-        columns: [
-          "Outlet", "Payment_Type", "Num_Transactions", "Num_New_Sales", "Num_Balance_Payments",
-          "New_Sales_Amount", "Balance_Paid_Amount", "Total_Amount", "pay_GST", "Tax_Collected", "Net_Amount"
-        ],
-        rows: [
-          {
-            "Outlet": "MB01",
-            "Payment_Type": "VISA",
-            "Num_Transactions": 846,
-            "Num_New_Sales": 0,
-            "Num_Balance_Payments": 0,
-            "New_Sales_Amount": 0,
-            "Balance_Paid_Amount": 0,
-            "Total_Amount": 318360.61,
-            "pay_GST": 26172.60,
-            "Tax_Collected": 292188.01,
-            "Net_Amount": 292188.01
-          },
-          {
-            "Outlet": "MB01",
-            "Payment_Type": "MASTER",
-            "Num_Transactions": 664,
-            "Num_New_Sales": 0,
-            "Num_Balance_Payments": 0,
-            "New_Sales_Amount": 0,
-            "Balance_Paid_Amount": 0,
-            "Total_Amount": 247653.25,
-            "pay_GST": 20270.50,
-            "Tax_Collected": 227382.75,
-            "Net_Amount": 227382.75
-          },
-          {
-            "Outlet": "MB01",
-            "Payment_Type": "PREPAID",
-            "Num_Transactions": 311,
-            "Num_New_Sales": 0,
-            "Num_Balance_Payments": 0,
-            "New_Sales_Amount": 0,
-            "Balance_Paid_Amount": 0,
-            "Total_Amount": 55254.31,
-            "pay_GST": 0,
-            "Tax_Collected": 55254.31,
-            "Net_Amount": 55254.31
-          },
-          {
-            "Outlet": "MB01",
-            "Payment_Type": "AMEX",
-            "Num_Transactions": 119,
-            "Num_New_Sales": 0,
-            "Num_Balance_Payments": 0,
-            "New_Sales_Amount": 0,
-            "Balance_Paid_Amount": 0,
-            "Total_Amount": 49768.04,
-            "pay_GST": 4109.28,
-            "Tax_Collected": 45658.76,
-            "Net_Amount": 45658.76
-          }
-        ]
-      },
-      timestamp: Date.now()
-    };
-
+    const mockMessage = generateMockApiResponse();
     setMessages(prev => [...prev, mockMessage]);
-    setShowMockButton(false);  // Hide the button after adding the mock message
+    setShowMockButton(false);
+    setShowChartMockButtons(false);
   };
 
+  // Line Chart Mock
+  const handleGenerateMockLineChart = () => {
+    const mockMessage = generateMockLineChart();
+    setMessages(prev => [...prev, mockMessage]);
+    setShowChartMockButtons(false);
+    setShowMockButton(false);
+  };
 
+  // Bar Chart Mock
+  const handleGenerateMockBarChart = () => {
+    const mockMessage = generateMockBarChart();
+    setMessages(prev => [...prev, mockMessage]);
+    setShowChartMockButtons(false);
+    setShowMockButton(false);
+  };
+
+  // Doughnut Chart Mock
+  const handleGenerateMockDoughnutChart = () => {
+    const mockMessage = generateMockDoughnutChart();
+    setMessages(prev => [...prev, mockMessage]);
+    setShowChartMockButtons(false);
+    setShowMockButton(false);
+  };
+
+  // Pie Chart Mock
+  const handleGenerateMockPieChart = () => {
+    const mockMessage = generateMockPieChart();
+    setMessages(prev => [...prev, mockMessage]);
+    setShowChartMockButtons(false);
+    setShowMockButton(false);
+  };
 
   const getStatusColor = () => {
     switch (connectionStatus) {
       case 'connected': return '#4CAF50';
       case 'disconnected': return '#F44336';
-      default: return '#FF9800';
+      case 'checking': return '#FF9800';
+      default: return '#64748b'; // idle
     }
+  };
+
+  const goToConfig = () => {
+    setActiveItem('agent-config'); // navigate to config page
   };
 
   return (
@@ -242,13 +224,35 @@ const ChatInterface = () => {
             </span>
           </div>
         </div>
-        <button
-          className="clear-button"
-          onClick={handleClearChat}
-          disabled={messages.length === 0}
-        >
-          Clear Chat
-        </button>
+        <div>
+          {connectionStatus === 'connected' && (
+            <button
+              className="disconnect-button"
+              onClick={() => {
+                // stop any pending activity
+                setIsStreaming(false);
+                setIsLoading(false);
+                setStreamingContent('');
+                // mark app as disconnected
+                setConnectionStatus('disconnected');
+                // optional: notify user
+                setError(null);
+              }}
+              style={{ marginLeft: 8 }}
+              aria-label="Disconnect assistant"
+              title="Disconnect"
+            >
+              Disconnect
+            </button>
+          )}
+          <button
+            className="clear-button"
+            onClick={handleClearChat}
+            disabled={messages.length === 0}
+          >
+            Clear Chat
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -258,13 +262,96 @@ const ChatInterface = () => {
         </div>
       )}
 
-      {/* ✅ Dummy button to generate mock report */}
-      {/* {showMockButton && (
-        <button onClick={handleGenerateMockApiResponse} style={{ marginTop: "10px" }}>
-          Generate API Mock Response
-        </button>
-      )} */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "50px" }}>
+        {/* ✅ Dummy button to generate mock report */}
+        {/* {showMockButton && (
+          <button onClick={handleGenerateMockApiResponse} style={{ marginTop: "50px", width: "250px", backgroundColor: "blueviolet" }}>
+            Generate API Mock Response
+          </button>
+        )} */}
 
+        {/* Chart Testing Buttons */}
+        {/* {showChartMockButtons && (
+          <div style={{
+            marginTop: "10px",
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+            padding: "10px",
+            border: "1px solid #e5e7eb",
+            borderRadius: "8px",
+            // backgroundColor: "#f9fafb"
+          }}>
+            <div style={{ width: "100%", marginBottom: "5px", fontWeight: "bold", fontSize: "14px" }}>
+              Test Chart Types:
+            </div>
+            <button
+              onClick={() => { handleGenerateMockLineChart(); setShowChartMockButtons(false); }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#4b5563",
+                color: "white",
+                border: "none",
+                borderRadius: "4px"
+              }}
+            >
+              📈 Line Chart
+            </button>
+            <button
+              onClick={() => { handleGenerateMockBarChart(); setShowChartMockButtons(false); }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#10a37f",
+                color: "white",
+                border: "none",
+                borderRadius: "4px"
+              }}
+            >
+              📊 Bar Chart
+            </button>
+            <button
+              onClick={() => { handleGenerateMockDoughnutChart(); setShowChartMockButtons(false); }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "4px"
+              }}
+            >
+              🍩 Doughnut Chart
+            </button>
+            <button
+              onClick={() => { handleGenerateMockPieChart(); setShowChartMockButtons(false); }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#f59e0b",
+                color: "white",
+                border: "none",
+                borderRadius: "4px"
+              }}
+            >
+              🥧 Pie Chart
+            </button>
+          </div>
+        )} */}
+
+      </div>
+
+      {connectionStatus !== 'connected' && (
+        <div className="disconnected-card">
+          <div className="disconnected-icon-wrap">
+            <IoChatboxOutline className="disconnected-icon" />
+          </div>
+          <h1 className="disconnected-title">Connect to an AI agent to start chatting</h1>
+          <p className="disconnected-subtitle">Supports HTTP API, WebSocket and MCP connections</p>
+          <button className="disconnected-button" onClick={() => setActiveItem('agent-config')}>
+            Configure Connection
+          </button>
+          {connectionStatus === 'checking' && <div className="disconnected-hint">Attempting to connect...</div>}
+          {connectionStatus === 'idle' && <div className="disconnected-hint">No connection configured yet.</div>}
+        </div>
+      )}
 
       <div className="messages-container">
         <MessageList

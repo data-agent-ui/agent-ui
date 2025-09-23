@@ -1,37 +1,45 @@
+// App.js
 import React, { useState } from 'react';
-import LeftMenu from './components/LeftMenu.js';
-import Dashboard from './components/Dashboard.js';
-import ChatInterface from './components/ChatInterface.js';
-
-
+import LeftMenu from './components/LeftMenu';
+import Dashboard from './components/Dashboard';
+import ChatInterface from './components/ChatInterface';
 import './App.css';
+import AgentConfig from './components/AgentConfig';
 
 function App() {
   const [activeItem, setActiveItem] = useState('dashboard');
-
-  const handleMenuClick = (itemId) => {
-    setActiveItem(itemId);
-  };
-
-  const renderContent = () => {
-    switch (activeItem) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'assistant':
-        return <ChatInterface />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
-
-
+  const [connectionStatus, setConnectionStatus] = useState('idle');
+  const [collapsed, setCollapsed] = useState(false); // 👈 add state
 
   return (
     <div className="App">
-      <LeftMenu activeItem={activeItem} onItemClick={handleMenuClick} />
-      <div className="main-content">
-        {renderContent()}
+      <LeftMenu
+        activeItem={activeItem}
+        onItemClick={setActiveItem}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed} // 👈 pass setter down
+      />
+      <div
+        className={`main-content ${collapsed ? 'collapsed' : ''}`} // 👈 add collapsed class
+      >
+        {activeItem === 'dashboard' && <Dashboard />}
+        {activeItem === 'assistant' && (
+          <ChatInterface
+            connectionStatus={connectionStatus}
+            setConnectionStatus={setConnectionStatus}
+            setActiveItem={setActiveItem}
+          />
+        )}
+        {activeItem === 'agent-config' && (
+          <AgentConfig
+            onConnected={() => {
+              setConnectionStatus('connected');
+              setActiveItem('assistant');
+            }}
+            onDisconnected={(msg) => setConnectionStatus('disconnected')}
+            defaultMode="http"
+          />
+        )}
       </div>
     </div>
   );

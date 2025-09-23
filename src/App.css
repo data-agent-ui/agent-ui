@@ -29,9 +29,17 @@ body {
 .main-content {
   flex: 1;
   margin-left: 250px;
+  /* default expanded menu */
   height: 100vh;
   overflow-y: auto;
   background-color: #0f172a;
+  transition: margin-left 0.3s ease;
+  /* smooth animation */
+}
+
+.main-content.collapsed {
+  margin-left: 70px;
+  /* when sidebar collapsed */
 }
 
 /* Global button styles */

@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import './ChartMessage.css';
 
 // Register Chart.js components
@@ -71,6 +71,7 @@ const ChartMessage = ({ chartData, chartType = 'line' }) => {
 
   // Prepare data for Chart.js format
   const chartJsData = {
+    title: chartData.title,
     labels: chartData.labels,
     datasets: chartData.datasets.map(dataset => ({
       ...dataset,
@@ -85,8 +86,9 @@ const ChartMessage = ({ chartData, chartType = 'line' }) => {
       case 'bar':
         return <Bar data={chartJsData} options={options} />;
       case 'doughnut':
-      case 'pie':
         return <Doughnut data={chartJsData} options={options} />;
+      case 'pie':
+        return <Pie data={chartJsData} options={options} />;
       default:
         return <Line data={chartJsData} options={options} />;
     }
