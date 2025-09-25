@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import LeftMenu from './components/LeftMenu';
-import Dashboard from './components/Dashboard';
-import ChatInterface from './components/ChatInterface';
+import LeftMenu from './components/LeftMenu.js';
+import Dashboard from './components/Dashboard.js';
+import ChatInterface from './components/ChatInterface.js';
 import './App.css';
-import AgentConfig from './components/AgentConfig';
+import AgentConfig from './components/AgentConfig.js';
 
 function App() {
   const [activeItem, setActiveItem] = useState('dashboard');

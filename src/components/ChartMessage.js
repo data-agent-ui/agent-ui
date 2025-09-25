@@ -13,7 +13,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import './ChartMessage.css';
-import { lightTheme } from '../utils/chartThemes';
+import { lightTheme } from '../utils/chartThemes.js';
 
 ChartJS.register(
   CategoryScale,
