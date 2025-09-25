@@ -1,6 +1,7 @@
+/* Base */
 .markdown-content {
-  line-height: 1.6;
-  color: inherit;
+  line-height: 1.7;
+  color: #1a202c;
 }
 
 /* Headings */
@@ -8,8 +9,8 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin: 1.5rem 0 1rem 0;
-  color: #f8fafc;
-  border-bottom: 2px solid #667eea;
+  color: #2d3748;
+  border-bottom: 2px solid #e2e8f0;
   padding-bottom: 0.5rem;
 }
 
@@ -17,79 +18,74 @@
   font-size: 1.25rem;
   font-weight: 600;
   margin: 1.25rem 0 0.75rem 0;
-  color: #f8fafc;
+  color: #2d3748;
 }
 
 .markdown-h3 {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 1rem 0 0.5rem 0;
-  color: #f8fafc;
+  color: #2d3748;
 }
 
 /* Paragraphs */
 .markdown-p {
-  margin: 0.75rem 0;
-  color: inherit;
+  margin: 0.9rem 0;
 }
 
-/* Code */
+/* Inline code */
 .markdown-inline-code {
-  background-color: #334155;
-  color: #667eea;
+  background-color: #f7fafc;
+  color: #1a202c;
+  /* neutral text */
   padding: 0.125rem 0.25rem;
   border-radius: 4px;
-  font-family: 'Courier New', monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.875rem;
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  border: 1px solid #e2e8f0;
 }
 
-.markdown-code-block {
-  background-color: #1e293b;
-  color: #f8fafc;
+/* Code blocks */
+.markdown-code-block,
+.markdown-pre {
+  background-color: #f7fafc;
+  color: #1a202c;
   padding: 0.75rem;
   border-radius: 8px;
-  font-family: 'Courier New', monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.875rem;
   overflow-x: auto;
   display: block;
-  margin: 0.75rem 0;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  margin: 0.9rem 0;
+  border: 1px solid #e2e8f0;
 }
 
-.markdown-pre {
-  background-color: #1e293b;
-  color: #f8fafc;
-  padding: 0.75rem;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin: 0.75rem 0;
-  font-family: 'Courier New', monospace;
-  font-size: 0.875rem;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+.markdown-pre code {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Blockquotes */
 .markdown-blockquote {
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #e2e8f0;
   margin: 1rem 0;
   padding: 0.5rem 0 0.5rem 1rem;
-  background-color: rgba(102, 126, 234, 0.05);
+  background-color: rgba(0, 0, 0, 0.02);
   border-radius: 0 8px 8px 0;
-  color: #cbd5e1;
+  color: #718096;
   font-style: italic;
 }
 
 /* Lists */
 .markdown-ul,
 .markdown-ol {
-  margin: 0.75rem 0;
+  margin: 0.9rem 0;
   padding-left: 1.5rem;
 }
 
 .markdown-li {
-  margin: 0.25rem 0;
-  color: inherit;
+  margin: 0.3rem 0;
+  color: #1a202c;
 }
 
 /* Tables */
@@ -97,25 +93,25 @@
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
-  background-color: #1e293b;
+  background-color: #f7fafc;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid #e2e8f0;
 }
 
 .markdown-th {
-  background-color: #334155;
-  color: #f8fafc;
+  background-color: #edf2f7;
+  color: #1a202c;
   padding: 0.75rem;
   text-align: left;
   font-weight: 600;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .markdown-td {
   padding: 0.75rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  color: inherit;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  color: #1a202c;
 }
 
 .markdown-table tr:last-child .markdown-td {
@@ -123,32 +119,35 @@
 }
 
 .markdown-table tr:hover {
-  background-color: rgba(102, 126, 234, 0.05);
+  background-color: #ffffff;
 }
 
 /* Links */
 .markdown-link {
-  color: #667eea;
+  color: #4a5568;
+  /* neutral gray */
   text-decoration: underline;
-  transition: color 0.3s ease;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  text-decoration-color: rgba(74, 85, 104, 0.6);
 }
 
 .markdown-link:hover {
-  color: #5a67d8;
+  color: #2d3748;
+  text-decoration-color: #2d3748;
 }
 
 /* Text formatting */
 .markdown-strong {
   font-weight: 600;
-  color: #f8fafc;
+  color: #1a202c;
 }
 
 .markdown-em {
   font-style: italic;
-  color: #cbd5e1;
+  color: #718096;
 }
 
-/* Responsive design */
+/* Responsive */
 @media (max-width: 768px) {
   .markdown-h1 {
     font-size: 1.25rem;

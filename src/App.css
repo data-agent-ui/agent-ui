@@ -1,3 +1,4 @@
+/* Reset */
 * {
   margin: 0;
   padding: 0;
@@ -6,15 +7,15 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0f172a;
-  color: #f8fafc;
+  background-color: #ffffff;
+  color: #1a202c;
   line-height: 1.6;
 }
 
+/* Layout */
 #root {
   height: 100vh;
   display: flex;
@@ -28,43 +29,52 @@ body {
 
 .main-content {
   flex: 1;
-  margin-left: 250px;
-  /* default expanded menu */
+  margin-left: 300px;
   height: 100vh;
   overflow-y: auto;
-  background-color: #0f172a;
+  background-color: #ffffff;
   transition: margin-left 0.3s ease;
-  /* smooth animation */
 }
 
 .main-content.collapsed {
   margin-left: 70px;
-  /* when sidebar collapsed */
 }
 
-/* Global button styles */
+/* Buttons */
 button {
   font-family: inherit;
   font-size: inherit;
   cursor: pointer;
-  border: none;
-  outline: none;
-  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+  background-color: #f7fafc;
+  color: #1a202c;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.06s ease;
+}
+
+button:hover {
+  background-color: #edf2f7;
+  border-color: #cbd5e0;
+}
+
+button:active {
+  transform: translateY(1px);
 }
 
 button:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid #5a67d8;
   outline-offset: 2px;
 }
 
-/* Global input styles */
+/* Inputs */
 input,
 textarea {
   font-family: inherit;
   font-size: inherit;
-  background-color: #1e293b;
-  color: #f8fafc;
-  border: 1px solid #334155;
+  background-color: #f7fafc;
+  color: #1a202c;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   padding: 0.5rem;
 }
@@ -72,16 +82,16 @@ textarea {
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #5a67d8;
+  box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.2);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #94a3b8;
+  color: #718096;
 }
 
-/* Loading animation */
+/* Loading */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -92,7 +102,7 @@ textarea::placeholder {
   animation: spin 1s linear infinite;
 }
 
-/* Utility classes */
+/* A11Y utility */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -105,7 +115,60 @@ textarea::placeholder {
   border: 0;
 }
 
-/* Responsive design */
+/* Hamburger button - only visible on mobile */
+.hamburger-btn {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1200;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 20px;
+  color: #4a5568;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.hamburger-btn:hover {
+  background-color: #f7fafc;
+  transform: scale(1.05);
+}
+
+.hamburger-btn:active {
+  transform: scale(0.95);
+}
+
+/* Mobile responsive - CORRECTED */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-top: 0; /* Remove any top padding */
+  }
+
+  .main-content.collapsed {
+    margin-left: 0 !important;
+  }
+
+  /* Ensure App layout is proper on mobile */
+  .App {
+    flex-direction: row; /* Keep as row, don't change to column */
+  }
+}
+
+/* REMOVE THESE CONFLICTING RULES COMPLETELY */
+/* These were causing the white space issue */
+/*
 @media (max-width: 768px) {
   .main-content {
     margin-left: 200px;
@@ -127,3 +190,4 @@ textarea::placeholder {
     height: auto;
   }
 }
+*/

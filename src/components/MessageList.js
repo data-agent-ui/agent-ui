@@ -1,7 +1,7 @@
 import React from 'react';
-import ChartMessage from './ChartMessage.js';
-import MarkdownRenderer from './MarkdownRenderer.js';
-import { extractChartData, extractTextWithoutChart, formatChartData } from '../utils/chartUtils.js';
+import ChartMessage from './ChartMessage';
+import MarkdownRenderer from './MarkdownRenderer';
+import { extractChartData, extractTextWithoutChart, formatChartData } from '../utils/chartUtils';
 import './MessageList.css';
 
 const generateMarkdownTable = (title, columns, rows) => {

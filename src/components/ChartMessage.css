@@ -1,27 +1,38 @@
 .chart-message {
   margin: 1rem 0;
+  color: #718096;
+  /* neutral text */
 }
 
 .chart-container {
-  background-color: #1e293b;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   height: 400px;
   width: 100%;
-  /* max-width: 600px; */
-  /* max-width: 50%; */
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .chart-container:hover {
-  border-color: rgba(102, 126, 234, 0.3);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+  border-color: #cbd5e0;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
+  background-color: #ffffff;
 }
 
-/* Responsive design */
+/* Neutral accent focus */
+.chart-container:focus-visible {
+  outline: 2px solid #e2e8f0;
+  /* neutral gray instead of blue */
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 1px rgba(226, 232, 240, 0.6) inset,
+    0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .chart-container {
     height: 300px;

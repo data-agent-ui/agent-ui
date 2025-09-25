@@ -51,18 +51,18 @@ export const generateMockLineChart = () => ({
                 {
                     label: "Sales Revenue",
                     data: [12000, 19000, 3000, 5000, 8500, 14000],
-                    borderColor: "#4b5563",
-                    backgroundColor: "rgba(75, 85, 99, 0.2)",
-                    tension: 0.4,
-                    fill: true
+                    // borderColor: "#4b5563",
+                    // backgroundColor: "rgba(75, 85, 99, 0.2)",
+                    // tension: 0.4,
+                    // fill: true
                 },
                 {
                     label: "Target Revenue",
                     data: [10000, 15000, 12000, 13000, 11000, 16000],
-                    borderColor: "#10a37f",
-                    backgroundColor: "rgba(16, 163, 127, 0.1)",
-                    borderDash: [5, 5],
-                    fill: false
+                    // borderColor: "#10a37f",
+                    // backgroundColor: "rgba(16, 163, 127, 0.1)",
+                    // borderDash: [5, 5],
+                    // fill: false
                 }
             ]
         }
@@ -82,9 +82,9 @@ export const generateMockBarChart = () => ({
                 {
                     label: "Transaction Count",
                     data: [846, 664, 311, 119, 89, 156],
-                    backgroundColor: ["#4b5563", "#10a37f", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6"],
-                    borderColor: ["#374151", "#059669", "#dc2626", "#2563eb", "#d97706", "#7c3aed"],
-                    borderWidth: 2
+                    // backgroundColor: ["#4b5563", "#10a37f", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6"],
+                    // borderColor: ["#374151", "#059669", "#dc2626", "#2563eb", "#d97706", "#7c3aed"],
+                    // borderWidth: 2
                 }
             ]
         }
@@ -104,10 +104,10 @@ export const generateMockDoughnutChart = () => ({
                 {
                     label: "Revenue %",
                     data: [35, 25, 15, 12, 8, 5],
-                    backgroundColor: ["#4b5563", "#10a37f", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6"],
-                    borderColor: "#ffffff",
-                    borderWidth: 3,
-                    hoverOffset: 10
+                    // backgroundColor: ["#4b5563", "#10a37f", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6"],
+                    // borderColor: "#ffffff",
+                    // borderWidth: 3,
+                    // hoverOffset: 10
                 }
             ]
         }
@@ -127,10 +127,10 @@ export const generateMockPieChart = () => ({
                 {
                     label: "Market Share %",
                     data: [28, 22, 18, 15, 17],
-                    backgroundColor: ["#10a37f", "#4b5563", "#ef4444", "#3b82f6", "#f59e0b"],
-                    borderColor: "#ffffff",
-                    borderWidth: 2,
-                    hoverBackgroundColor: ["#059669", "#374151", "#dc2626", "#2563eb", "#d97706"]
+                    // backgroundColor: ["#10a37f", "#4b5563", "#ef4444", "#3b82f6", "#f59e0b"],
+                    // borderColor: "#ffffff",
+                    // borderWidth: 2,
+                    // hoverBackgroundColor: ["#059669", "#374151", "#dc2626", "#2563eb", "#d97706"]
                 }
             ]
         }

@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './LeftMenu.css';
-import { IoSettings } from "react-icons/io5";
+import { IoSettings, IoTrashOutline, IoChatboxOutline, IoClose } from "react-icons/io5";
 import { HiOutlineMenuAlt2 } from "react-icons/hi";
+import { RiDeleteBin6Line } from "react-icons/ri";
+import { RiChatNewLine } from "react-icons/ri";
 
-const LeftMenu = ({ activeItem, onItemClick, collapsed, setCollapsed }) => {
+const LeftMenu = ({
+  activeItem,
+  onItemClick,
+  collapsed,
+  setCollapsed,
+  conversations = [],
+  activeConversation,
+  onConversationSelect,
+  onNewChatView,
+  onDeleteConversation,
+  isMobileMenuOpen = false,
+  setIsMobileMenuOpen
+}) => {
   const topItems = [
     {
       id: 'dashboard',
@@ -16,18 +30,8 @@ const LeftMenu = ({ activeItem, onItemClick, collapsed, setCollapsed }) => {
     },
     {
       id: 'assistant',
-      label: 'Assistant',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 
-               10 10 10 10-4.48 10-10S17.52 2 
-               12 2zm-2 15l-5-5 1.41-1.41L10 
-               14.17l7.59-7.59L19 8l-9 9z"
-            fill="currentColor"
-          />
-        </svg>
-      )
+      label: 'New Chat',
+      icon: <RiChatNewLine />
     },
   ];
 
@@ -39,48 +43,248 @@ const LeftMenu = ({ activeItem, onItemClick, collapsed, setCollapsed }) => {
     },
   ];
 
+  // Filter conversations to only show those with messages
+  const conversationsWithMessages = conversations.filter(conv =>
+    conv.messages && conv.messages.length > 0
+  );
+
+  // Generate conversation title from first message
+  const getConversationTitle = (conversation) => {
+    if (conversation.title) return conversation.title;
+
+    const firstUserMessage = conversation.messages?.find(msg => msg.role === 'user');
+    if (firstUserMessage) {
+      const content = firstUserMessage.content;
+      return content.length > 30 ? content.substring(0, 30) + '...' : content;
+    }
+
+    return `Chat ${conversation.id.substring(0, 8)}`;
+  };
+
+  // Format timestamp for display
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const handleDeleteConversation = (e, conversationId) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this conversation?')) {
+      onDeleteConversation(conversationId);
+    }
+  };
+
+  // Close mobile menu when item is clicked
+  const handleItemClick = (itemId) => {
+    if (itemId === 'assistant') {
+      onNewChatView();
+    } else {
+      onItemClick(itemId);
+    }
+    if (setIsMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  };
+
+  // Close mobile menu when conversation is selected
+  const handleConversationSelect = (conversationId) => {
+    onConversationSelect(conversationId);
+    if (setIsMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  };
+
+  // Check if we're on mobile
+  const isMobile = window.innerWidth <= 768;
+
+  // Handle escape key to close mobile menu
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isMobileMenuOpen && setIsMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isMobileMenuOpen, setIsMobileMenuOpen]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
   return (
-    <div className={`left-menu ${collapsed ? 'collapsed' : ''}`}>
-      <div className="menu-header">
-        {!collapsed && <h2>AI Assistant</h2>}
-        <button
-          className="collapse-btn"
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          <HiOutlineMenuAlt2 />
-        </button>
-      </div>
+    <>
+      {/* Mobile backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-menu-backdrop"
+          onClick={() => setIsMobileMenuOpen && setIsMobileMenuOpen(false)}
+        />
+      )}
 
-      {/* Top section */}
-      <nav className="menu-nav">
-        {topItems.map((item) => (
+      {/* Mobile Header Bar - Only visible on mobile when menu is closed */}
+      {isMobile && !isMobileMenuOpen && (
+        <div className="mobile-header-bar">
           <button
-            key={item.id}
-            className={`menu-item ${activeItem === item.id ? 'active' : ''}`}
-            onClick={() => onItemClick(item.id)}
-            title={collapsed ? item.label : ""}
+            className="mobile-hamburger-btn"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Open menu"
           >
-            <span className="menu-icon">{item.icon}</span>
-            {!collapsed && <span className="menu-label">{item.label}</span>}
+            <HiOutlineMenuAlt2 />
           </button>
-        ))}
-      </nav>
+          <h2>AI Assistant</h2>
+        </div>
+      )}
 
-      {/* Bottom section */}
-      <div className="menu-bottom">
-        {bottomItems.map((item) => (
+      {/* Desktop Sidebar / Mobile Modal Menu */}
+      <div className={`left-menu ${collapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        <div className="menu-header">
+          {/* Show title based on screen size and state - Desktop only when not collapsed */}
+          {!isMobile && !collapsed && <h2>AI Assistant</h2>}
+          {/* Mobile: Show title and close button when menu is open */}
+          {isMobile && <h2>AI Assistant</h2>}
+
           <button
-            key={item.id}
-            className={`menu-item ${activeItem === item.id ? 'active' : ''}`}
-            onClick={() => onItemClick(item.id)}
-            title={collapsed ? item.label : ""}
+            className="collapse-btn"
+            onClick={() => {
+              if (isMobile && setIsMobileMenuOpen) {
+                setIsMobileMenuOpen(false);
+              } else {
+                setCollapsed(!collapsed);
+              }
+            }}
           >
-            <span className="menu-icon">{item.icon}</span>
-            {!collapsed && <span className="menu-label">{item.label}</span>}
+            {isMobile ? <IoClose /> : <HiOutlineMenuAlt2 />}
           </button>
-        ))}
+        </div>
+
+        {/* Menu Content - Only show on desktop or when mobile menu is open */}
+        {(!isMobile || isMobileMenuOpen) && (
+          <>
+            {/* Top section */}
+            <nav className="menu-nav">
+              {topItems.map((item) => (
+                <button
+                  key={item.id}
+                  className={`menu-item ${activeItem === item.id ? 'active' : ''}`}
+                  onClick={() => handleItemClick(item.id)}
+                  title={collapsed && !isMobile ? item.label : ""}
+                >
+                  <span className="menu-icon">{item.icon}</span>
+                  {/* Show labels on mobile or when not collapsed on desktop */}
+                  {(isMobile || !collapsed) && <span className="menu-label">{item.label}</span>}
+                </button>
+              ))}
+
+              {/* Conversations section - show on mobile or when not collapsed on desktop */}
+              {(isMobile || !collapsed) && (
+                <div className="conversations-section">
+                  <div className="conversations-header">
+                    <h3>Chats</h3>
+                    <button
+                      className="new-chat-btn"
+                      title="New Chat"
+                    >
+                      <IoChatboxOutline />
+                    </button>
+                  </div>
+
+                  <div className="conversations-list">
+                    {conversationsWithMessages.length === 0 ? (
+                      <div className="no-conversations">
+                        <p>No conversations yet</p>
+                      </div>
+                    ) : (
+                      conversationsWithMessages.map((conversation) => (
+                        <div
+                          key={conversation.id}
+                          className={`conversation-item ${activeItem === 'assistant' && activeConversation === conversation.id ? 'active' : ''
+                            }`}
+                          onClick={() => handleConversationSelect(conversation.id)}
+                        >
+                          <div className="conversation-content">
+                            <div className="conversation-title">
+                              {getConversationTitle(conversation)}
+                            </div>
+                            <div className="conversation-meta">
+                              <span className="conversation-time">
+                                {formatTimestamp(conversation.lastMessage)}
+                              </span>
+                              <span className="conversation-count">
+                                {conversation.messages?.length || 0} messages
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            className="delete-conversation-btn"
+                            onClick={(e) => handleDeleteConversation(e, conversation.id)}
+                            title="Delete conversation"
+                          >
+                            <RiDeleteBin6Line />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Collapsed conversations - only show on desktop when collapsed */}
+              {!isMobile && collapsed && conversationsWithMessages.length > 0 && (
+                <div className="conversations-collapsed">
+                  <button
+                    className="menu-item conversations-indicator"
+                    title={`${conversationsWithMessages.length} conversations`}
+                  >
+                    <span className="menu-icon">
+                      <IoChatboxOutline />
+                    </span>
+                    <span className="conversation-badge">{conversationsWithMessages.length}</span>
+                  </button>
+                </div>
+              )}
+            </nav>
+
+            {/* Bottom section */}
+            <div className="menu-bottom">
+              {bottomItems.map((item) => (
+                <button
+                  key={item.id}
+                  className={`menu-item ${activeItem === item.id ? 'active' : ''}`}
+                  onClick={() => handleItemClick(item.id)}
+                  title={collapsed && !isMobile ? item.label : ""}
+                >
+                  <span className="menu-icon">{item.icon}</span>
+                  {/* Show labels on mobile or when not collapsed on desktop */}
+                  {(isMobile || !collapsed) && <span className="menu-label">{item.label}</span>}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </>
   );
 };
 

@@ -49,7 +49,7 @@ export const extractTextWithoutChart = (text) => {
 
 export const formatChartData = (chartData) => {
   // Ensure the chart data has the required structure
-  if (!chartData.labels || !chartData.datasets) {
+  if (!chartData.labels) {
     throw new Error('Invalid chart data structure');
   }
 

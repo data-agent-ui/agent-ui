@@ -1,3 +1,4 @@
+/* List and item */
 .message-list {
   display: flex;
   flex-direction: column;
@@ -12,18 +13,7 @@
   animation: fadeIn 0.3s ease-in;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* Positions */
 .message.user {
   align-self: flex-end;
 }
@@ -32,8 +22,9 @@
   align-self: flex-start;
 }
 
+/* Bubble */
 .message-content {
-  padding: 0.75rem 1rem;
+  padding: 0.05rem 1rem;
   border-radius: 12px;
   font-size: 0.95rem;
   line-height: 1.5;
@@ -41,50 +32,43 @@
   white-space: pre-wrap;
   max-width: 100%;
   overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-
-/* .message-content table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  word-wrap: break-word;
-}
-
-.message-content th,
-.message-content td {
-  padding: 0.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  overflow-wrap: break-word;
-} */
-
-
 
 .message.user .message-content {
-  background: #1e293b;
-  color: #ffffff;
+  background: #edf2f7;
+  /* lighter gray */
+  color: #1a202c;
   border-bottom-right-radius: 4px;
 }
 
-/* Assistant messages with dark theme background */
 .message.assistant .message-content {
-  background-color: #0f172a;
-  color: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background-color: #ffffff;
+  color: #1a202c;
   border-bottom-left-radius: 4px;
 }
 
 .message.streaming .message-content {
-  background-color: #1e293b;
-  color: #f8fafc;
-  border: 1px solid rgba(102, 126, 234, 0.3);
+  background-color: #f7fafc;
+  color: #1a202c;
+  border: 1px solid #cbd5e0;
   border-bottom-left-radius: 4px;
   position: relative;
 }
 
+/* Hover elevation (optional) */
+.message-content:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e0;
+}
+
+/* Streaming cursor/indicator */
 .streaming-cursor {
   animation: blink 1s infinite;
-  color: #667eea;
-  font-weight: bold;
+  color: #4a5568;
+  /* neutral dark gray */
+  font-weight: 700;
 }
 
 @keyframes blink {
@@ -100,13 +84,14 @@
   }
 }
 
+/* Meta */
 .message-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #718096;
   padding: 0 0.5rem;
 }
 
@@ -120,43 +105,46 @@
 }
 
 .message-time {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .streaming-indicator {
-  color: #667eea;
+  color: #4a5568;
   font-style: italic;
 }
 
-/* Code blocks styling */
+/* Code blocks inside messages */
 .message-content pre {
-  background-color: #1e293b;
-  color: #f8fafc;
+  background-color: #f7fafc;
+  color: #1a202c;
   padding: 0.75rem;
   border-radius: 6px;
   overflow-x: auto;
   margin: 0.5rem 0;
-  font-family: 'Courier New', monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.875rem;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid #e2e8f0;
 }
 
 .message-content code {
-  background-color: #334155;
-  color: #667eea;
+  background-color: #f1f5f9;
+  color: #4a5568;
   padding: 0.125rem 0.25rem;
   border-radius: 3px;
-  font-family: 'Courier New', monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.875rem;
+  border: 1px solid #e2e8f0;
 }
 
 .message-content pre code {
   background-color: transparent;
   color: inherit;
   padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-/* Message with chart styling */
+/* Message with chart */
 .message-with-chart {
   display: flex;
   flex-direction: column;
@@ -167,7 +155,7 @@
   margin-bottom: 0.5rem;
 }
 
-/* Responsive design */
+/* Responsive */
 @media (max-width: 768px) {
   .message {
     max-width: 90%;
@@ -180,5 +168,18 @@
 
   .message-meta {
     font-size: 0.7rem;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
