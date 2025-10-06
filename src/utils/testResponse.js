@@ -137,3 +137,94 @@ export const generateMockPieChart = () => ({
     },
     timestamp: Date.now()
 });
+
+export const generateMockRadarChart = () => ({
+    role: 'assistant',
+    response: "## Category Strengths (Radar)\n\nRadar comparison of KPIs across departments...",
+    chart: {
+        type: "radar",
+        chartData: {
+            title: "Department KPI Radar",
+            labels: ["Quality", "Speed", "Cost", "Satisfaction", "Innovation", "Reliability"],
+            datasets: [
+                {
+                    label: "Dept A",
+                    data: [65, 59, 90, 81, 56, 55]
+                },
+                {
+                    label: "Dept B",
+                    data: [28, 48, 40, 19, 96, 27]
+                }
+            ]
+        }
+    },
+    timestamp: Date.now()
+});
+
+export const generateMockPolarAreaChart = () => ({
+    role: 'assistant',
+    response: "## Polar Area Mix\n\nRelative proportions of support ticket categories...",
+    chart: {
+        type: "polararea",
+        chartData: {
+            title: "Tickets by Category",
+            labels: ["Billing", "Technical", "Account", "Shipping", "Other"],
+            datasets: [
+                {
+                    label: "Ticket Share",
+                    data: [11, 16, 7, 3, 14]
+                }
+            ]
+        }
+    },
+    timestamp: Date.now()
+});
+
+export const generateMockScatterChart = () => ({
+    role: 'assistant',
+    response: "## Scatter: Ads vs Sales\n\nRelationship between ad spend and sales revenue...",
+    chart: {
+        type: "scatter",
+        chartData: {
+            title: "Ad Spend vs Revenue",
+            // For scatter/bubble, labels are optional; each point has {x,y}
+            datasets: [
+                {
+                    label: "Campaigns",
+                    data: [
+                        { x: 10, y: 20 },
+                        { x: 15, y: 10 },
+                        { x: 20, y: 30 },
+                        { x: 25, y: 22 },
+                        { x: 30, y: 40 }
+                    ]
+                }
+            ]
+        }
+    },
+    timestamp: Date.now()
+});
+
+export const generateMockBubbleChart = () => ({
+    role: 'assistant',
+    response: "## Bubble: Leads by Channel\n\nLead quality (y) vs cost (x) with size for volume...",
+    chart: {
+        type: "bubble",
+        chartData: {
+            title: "Channel Lead Quality",
+            datasets: [
+                {
+                    label: "Channels",
+                    data: [
+                        { x: 5, y: 20, r: 6 },
+                        { x: 12, y: 10, r: 10 },
+                        { x: 18, y: 30, r: 14 },
+                        { x: 25, y: 22, r: 8 },
+                        { x: 30, y: 12, r: 5 }
+                    ]
+                }
+            ]
+        }
+    },
+    timestamp: Date.now()
+});

@@ -9,11 +9,11 @@ export const extractChartData = (text) => {
 
     // Look for JSON code blocks in the text
     const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
-    
+
     if (jsonMatch) {
       const jsonString = jsonMatch[1].trim();
       const parsedData = JSON.parse(jsonString);
-      
+
       // Check if it's chart data
       if (parsedData && parsedData.type === 'chart' && parsedData.chartData) {
         return {
@@ -23,7 +23,7 @@ export const extractChartData = (text) => {
         };
       }
     }
-    
+
     return { hasChart: false };
   } catch (error) {
     console.error('Error parsing chart data:', error);
@@ -47,13 +47,23 @@ export const extractTextWithoutChart = (text) => {
   }
 };
 
-export const formatChartData = (chartData) => {
-  // Ensure the chart data has the required structure
-  if (!chartData.labels) {
+export const formatChartData = (chartData, chartType) => {
+  // Normalize type guard
+  const t = (chartType || '').toLowerCase();
+
+  // Heuristic: point-based datasets use objects like {x,y} or {x,y,r}
+  const isPointBased = Array.isArray(chartData?.datasets)
+    && chartData.datasets.some(ds =>
+      Array.isArray(ds?.data) &&
+      ds.data.some(pt => pt && typeof pt === 'object' && ('x' in pt) && ('y' in pt))
+    );
+
+  // Enforce labels only for non point-based types
+  const needsLabels = !isPointBased && !['scatter', 'bubble'].includes(t);
+  if (needsLabels && !chartData?.labels) {
     throw new Error('Invalid chart data structure');
   }
 
-  // Set default colors if not provided
   const defaultColors = [
     '#4b5563', // Dark gray
     '#10a37f', // Green
@@ -63,18 +73,46 @@ export const formatChartData = (chartData) => {
     '#8b5cf6', // Purple
   ];
 
-  const formattedData = {
-    ...chartData,
-    datasets: chartData.datasets.map((dataset, index) => ({
-      ...dataset,
-      borderColor: dataset.borderColor || defaultColors[index % defaultColors.length],
-      backgroundColor: dataset.backgroundColor || 
-        (dataset.borderColor ? 
-          dataset.borderColor.replace('rgb', 'rgba').replace(')', ', 0.2)') : 
-          defaultColors[index % defaultColors.length].replace('#', 'rgba(').replace(/(.{2})(.{2})(.{2})/, '$1, $2, $3, 0.2)')
-        ),
-    })),
+  const toRgba = (hex, alpha = 0.2) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
-  return formattedData;
+  return {
+    ...chartData,
+    datasets: (chartData.datasets || []).map((dataset, index) => {
+      const baseColor = defaultColors[index % defaultColors.length];
+
+      // Derive backgroundColor if missing
+      let backgroundColor = dataset.backgroundColor;
+      if (!backgroundColor) {
+        if (Array.isArray(dataset.borderColor)) {
+          backgroundColor = dataset.borderColor.map(c =>
+            typeof c === 'string' && c.startsWith('#') ? toRgba(c, 0.2)
+              : (typeof c === 'string' && c.startsWith('rgb'))
+                ? c.replace('rgb', 'rgba').replace(')', ', 0.2)')
+                : toRgba(baseColor, 0.2)
+          );
+        } else if (typeof dataset.borderColor === 'string') {
+          backgroundColor = dataset.borderColor.startsWith('#')
+            ? toRgba(dataset.borderColor, 0.2)
+            : dataset.borderColor.replace('rgb', 'rgba').replace(')', ', 0.2)');
+        } else {
+          backgroundColor = toRgba(baseColor, 0.2);
+        }
+      }
+
+      return {
+        label: dataset.label ?? `Series ${index + 1}`, // helps react-chartjs-2 differentiate datasets [web:35]
+        borderColor: dataset.borderColor || baseColor,
+        backgroundColor,
+        ...dataset
+      };
+    }),
+  };
 };
+
+
+

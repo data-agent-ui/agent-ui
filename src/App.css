@@ -13,31 +13,36 @@ body {
   background-color: #ffffff;
   color: #1a202c;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 /* Layout */
 #root {
   height: 100vh;
+  width: 100%;
   display: flex;
+  overflow: hidden;
 }
 
 .App {
   display: flex;
   width: 100%;
   height: 100vh;
+  overflow: hidden;
 }
 
+/* Main Content - Mobile First */
 .main-content {
   flex: 1;
-  margin-left: 300px;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   background-color: #ffffff;
   transition: margin-left 0.3s ease;
-}
-
-.main-content.collapsed {
-  margin-left: 70px;
+  margin-left: 0;
+  width: 100%;
+  padding-top: 56px;
+  /* Height of mobile header */
 }
 
 /* Buttons */
@@ -115,79 +120,140 @@ textarea::placeholder {
   border: 0;
 }
 
-/* Hamburger button - only visible on mobile */
-.hamburger-btn {
-  display: none;
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 1200;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 20px;
-  color: #4a5568;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s ease, transform 0.2s ease;
-}
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
 
-.hamburger-btn:hover {
-  background-color: #f7fafc;
-  transform: scale(1.05);
-}
-
-.hamburger-btn:active {
-  transform: scale(0.95);
-}
-
-/* Mobile responsive - CORRECTED */
-@media (max-width: 768px) {
-  .hamburger-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
+/* Small phones (320px - 479px) */
+@media only screen and (max-width: 479px) {
   .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding-top: 0; /* Remove any top padding */
+    margin-left: 0;
+    width: 100%;
+    padding-top: 52px;
+    /* Smaller header on tiny screens */
+  }
+}
+
+/* Portrait phones and large phones (480px - 599px) */
+@media only screen and (min-width: 480px) and (max-width: 599px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 56px;
+  }
+}
+
+/* Small tablets and large phones (600px - 767px) */
+@media only screen and (min-width: 600px) and (max-width: 767px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 60px;
+  }
+}
+
+/* Tablets (768px - 1023px) */
+@media only screen and (min-width: 768px) {
+  .main-content {
+    margin-left: 300px;
+    width: calc(100% - 300px);
+    padding-top: 0;
   }
 
   .main-content.collapsed {
-    margin-left: 0 !important;
-  }
-
-  /* Ensure App layout is proper on mobile */
-  .App {
-    flex-direction: row; /* Keep as row, don't change to column */
+    margin-left: 70px;
+    width: calc(100% - 70px);
   }
 }
 
-/* REMOVE THESE CONFLICTING RULES COMPLETELY */
-/* These were causing the white space issue */
-/*
-@media (max-width: 768px) {
+/* Desktops (1024px and up) */
+@media only screen and (min-width: 1024px) {
   .main-content {
-    margin-left: 200px;
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    padding-top: 0;
+  }
+
+  .main-content.collapsed {
+    margin-left: 70px;
+    width: calc(100% - 70px);
   }
 }
 
-@media (max-width: 480px) {
+/* Desktops (1280px - 1439px) */
+@media only screen and (min-width: 1280px) {
+  .main-content {
+    margin-left: 300px;
+    width: calc(100% - 340px);
+  }
+
+  .main-content.collapsed {
+    margin-left: 75px;
+    width: calc(100% - 75px);
+  }
+}
+
+/* Large desktops (1440px - 1919px) */
+@media only screen and (min-width: 1440px) {
+  .main-content {
+    margin-left: 320px;
+    width: calc(100% - 360px);
+  }
+
+  .main-content.collapsed {
+    margin-left: 80px;
+    width: calc(100% - 80px);
+  }
+}
+
+/* Ultra-wide screens (1920px and above) */
+@media only screen and (min-width: 1920px) {
+  .main-content {
+    margin-left: 320px;
+    width: calc(100% - 380px);
+  }
+
+  .main-content.collapsed {
+    margin-left: 85px;
+    width: calc(100% - 85px);
+  }
+}
+
+/* Landscape orientation for mobile/tablet */
+@media only screen and (max-width: 1023px) and (orientation: landscape) {
   .main-content {
     margin-left: 0;
-  }
-
-  .App {
-    flex-direction: column;
-  }
-
-  .left-menu {
-    position: relative;
     width: 100%;
-    height: auto;
+    padding-top: 48px;
   }
 }
-*/
+
+/* High DPI screens */
+@media only screen and (-webkit-min-device-pixel-ratio: 2),
+only screen and (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 0;
+  }
+}

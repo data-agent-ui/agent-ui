@@ -20,7 +20,7 @@ const MessageList = ({ messages, isStreaming, streamingContent }) => {
     // Handle new API response structure with separate fields
     if (message.chart) {
       // New structure: separate response and chart fields
-      const formattedChartData = formatChartData(message.chart.chartData);
+      const formattedChartData = formatChartData(message.chart.chartData, message.chart.type);
 
       return (
         <div className="message-with-chart">
@@ -50,7 +50,7 @@ const MessageList = ({ messages, isStreaming, streamingContent }) => {
 
     if (chartInfo.hasChart) {
       const textWithoutChart = extractTextWithoutChart(content);
-      const formattedChartData = formatChartData(chartInfo.chartData);
+      const formattedChartData = formatChartData(chartInfo.chartData, chartInfo.chartType);
 
       return (
         <div className="message-with-chart">

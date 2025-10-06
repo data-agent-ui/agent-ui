@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import MessageList from './MessageList.js';
 import MessageInput from './MessageInput.js';
+import agentService from '../services/agentService.js';
 import apiService from '../services/apiService.js';
 import './ChatInterface.css';
-// import {
-//   generateMockApiResponse, generateMockLineChart,
-//   generateMockBarChart,
-//   generateMockDoughnutChart,
-//   generateMockPieChart
-// } from '../utils/testResponse';
-import { IoChatboxOutline, IoSparkles, IoCodeSlash, IoAnalytics, IoDocument, IoSearch } from "react-icons/io5";
+import { IoChatboxOutline, IoSparkles, IoAnalytics, IoDocument } from "react-icons/io5";
+import { useConversationContext } from '../context/ConversationContext.js';
 
 // Loading skeleton component
 const LoadingSkeleton = () => (
@@ -39,25 +36,30 @@ const TypingIndicator = () => (
   </div>
 );
 
-const ChatInterface = ({
-  connectionStatus,
-  setConnectionStatus,
-  setActiveItem,
-  currentConversation,
-  onMessageUpdate,
-  activeConversationId,
-  ensureConversationOnFirstMessage,
-  pendingNewChat,
-}) => {
-  const [messages, setMessages] = useState([]);
+const ChatInterface = ({ connectionStatus, setConnectionStatus, setActiveItem }) => {
+  const { conversationId } = useParams();
+  const navigate = useNavigate();
+
+  const {
+    activeConversation,
+    pendingNewChat,
+    messages,
+    setMessages,
+    setActiveConversation,
+    updateConversation,
+    ensureConversationOnFirstMessage,
+    loadConversations,
+    conversations
+  } = useConversationContext();
+
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [shouldFocusInput, setShouldFocusInput] = useState(false);
+
+  const currentConversation = conversations.find(c => c.id === activeConversation);
   const messagesEndRef = useRef(null);
-  // const [showMockButton, setShowMockButton] = useState(true);
-  // const [showChartMockButtons, setShowChartMockButtons] = useState(true);
 
   const conversationStarters = [
     {
@@ -72,96 +74,47 @@ const ChatInterface = ({
       subtitle: "Format text with headers, tables, and code blocks",
       prompt: "Help me create a markdown document with tables, code examples, and properly formatted headers"
     },
-    // {
-    //   icon: <IoCodeSlash />,
-    //   title: "Code Analysis",
-    //   subtitle: "Review and optimize React components",
-    //   prompt: "Analyze my React component code for performance improvements and best practices"
-    // },
-    // {
-    //   icon: <IoSearch />,
-    //   title: "API Integration",
-    //   subtitle: "Troubleshoot streaming responses and connections",
-    //   prompt: "Help me debug streaming chat responses and optimize real-time communication"
-    // }
   ];
 
-  // const handleGenerateMockApiResponse = () => {
-  //   const mockMessage = generateMockApiResponse();
-  //   setMessages(prev => [...prev, mockMessage]);
-  //   setShowMockButton(false);
-  // };
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-  // const handleGenerateMockLineChart = () => {
-  //   const mockMessage = generateMockLineChart();
-  //   setMessages(prev => [...prev, mockMessage]);
-  //   setShowChartMockButtons(false);
-  //   setShowMockButton(false);
-  // };
+  useEffect(scrollToBottom, [messages, streamingContent]);
 
-  // // Bar Chart Mock
-  // const handleGenerateMockBarChart = () => {
-  //   const mockMessage = generateMockBarChart();
-  //   setMessages(prev => [...prev, mockMessage]);
-  //   setShowChartMockButtons(false);
-  //   setShowMockButton(false);
-  // };
-
-  // // Doughnut Chart Mock
-  // const handleGenerateMockDoughnutChart = () => {
-  //   const mockMessage = generateMockDoughnutChart();
-  //   setMessages(prev => [...prev, mockMessage]);
-  //   setShowChartMockButtons(false);
-  //   setShowMockButton(false);
-  // };
-
-  // // Pie Chart Mock
-  // const handleGenerateMockPieChart = () => {
-  //   const mockMessage = generateMockPieChart();
-  //   setMessages(prev => [...prev, mockMessage]);
-  //   setShowChartMockButtons(false);
-  //   setShowMockButton(false);
-  // };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Sync URL parameter with active conversation
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, streamingContent]);
+    if (conversationId && conversationId !== activeConversation) {
+      setActiveConversation(conversationId);
+    }
+  }, [conversationId]);
 
+  // Load messages when conversation changes
   useEffect(() => {
     if (currentConversation) {
       setMessages(currentConversation.messages || []);
-    } else {
+    } else if (pendingNewChat) {
       setMessages([]);
     }
-  }, [currentConversation]);
+  }, [currentConversation, pendingNewChat]);
 
   useEffect(() => {
     checkServerHealth();
   }, []);
 
   useEffect(() => {
-    if (shouldFocusInput) {
-      setShouldFocusInput(false);
-    }
+    if (shouldFocusInput) setShouldFocusInput(false);
   }, [shouldFocusInput]);
 
-  const checkServerHealth = async () => {
-    try {
-      await apiService.checkHealth();
-      setConnectionStatus('connected');
-    } catch (error) {
-      setConnectionStatus('disconnected');
-      setError('Unable to connect to the AI assistant server. Please make sure the server is running on localhost:5000');
-    }
-  };
+ const checkServerHealth = async () => {
+  try {
+    const response = await agentService.checkHealth();
+    setConnectionStatus('connected');
+  } catch (error) {
+    console.error('Health check failed:', error);
+    setConnectionStatus('disconnected');
+    setError('Unable to connect to AI server. Make sure it is running on localhost:5000');
+  }
+};
 
-  const handleSuggestionClick = (prompt) => {
-    handleSendMessage(prompt);
-  };
 
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim()) return;
@@ -171,59 +124,29 @@ const ChatInterface = ({
     setIsStreaming(false);
     setStreamingContent('');
 
-    const userMessage = {
-      role: 'user',
-      content: messageText,
-      timestamp: Date.now()
-    };
+    const userMessage = { role: 'user', content: messageText, timestamp: Date.now() };
 
-    let convId = activeConversationId;
+    let convId = currentConversation?.id;
+
     if (!convId && pendingNewChat) {
       convId = ensureConversationOnFirstMessage(userMessage);
+      navigate(`/chat/${convId}`, { replace: true });
     } else if (convId) {
-      onMessageUpdate(convId, userMessage);
+      updateConversation(convId, userMessage);
     } else {
-      setError('No active conversation. Please create a new conversation.');
+      setError('No active conversation.');
       setIsLoading(false);
       return;
     }
 
     setMessages(prev => [...prev, userMessage]);
 
-    // if (connectionStatus !== 'connected') {
-    //   try {
-    //     // Simulate loading delay for demo
-    //     await new Promise(resolve => setTimeout(resolve, 2000));
-    //     const dummy = generateDummyResponse(messageText);
-    //     const assistantMessage = {
-    //       role: 'assistant',
-    //       response: dummy.response || '',
-    //       chart: dummy.chart || null,
-    //       table: dummy.table || null,
-    //       map: dummy.map || null,
-    //       dashboard: dummy.dashboard || null,
-    //       timestamp: Date.now()
-    //     };
-
-    //     setMessages(prev => [...prev, assistantMessage]);
-    //     onMessageUpdate(convId, assistantMessage);
-    //     setShouldFocusInput(true);
-    //   } catch (e) {
-    //     setError('Failed to generate response');
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    //   return;
-    // }
-
     try {
       setIsStreaming(true);
-      await apiService.createStreamingConnection(
+      await agentService.createStreamingConnection(
         messageText,
-        (chunk) => {
-          setStreamingContent(prev => prev + chunk);
-        },
-        (completeData) => {
+        chunk => setStreamingContent(prev => prev + chunk),
+        async (completeData) => {
           setStreamingContent('');
           setIsStreaming(false);
           setIsLoading(false);
@@ -239,77 +162,50 @@ const ChatInterface = ({
           };
 
           setMessages(prev => [...prev, assistantMessage]);
-          onMessageUpdate(convId, assistantMessage);
+          updateConversation(convId, assistantMessage);
           setShouldFocusInput(true);
+
+          try {
+            const threadPayload = {
+              conversationId: convId,
+              timestamp: Date.now(),
+              messages: [
+                { role: 'user', content: messageText },
+                {
+                  role: 'assistant', content: completeData.response || '', meta: {
+                    hasChart: !!completeData.chart,
+                    hasTable: !!completeData.table,
+                    hasMap: !!completeData.map,
+                    hasDashboard: !!completeData.dashboard,
+                    chartType: completeData.chart?.type || null,
+                  }
+                }
+              ],
+              meta: { source: 'ui', version: '1.0' }
+            };
+            await apiService.postThreads(threadPayload);
+          } catch (err) {
+            console.error('Failed to store conversation:', err);
+          }
         },
-        (error) => {
-          console.error('Chat Interface Error:', {
-            error: error?.message || error,
-            message: messageText,
-            timestamp: new Date().toISOString(),
-            userAgent: navigator.userAgent
-          });
-          setError(error?.message || error?.toString() || 'Failed to get response from AI assistant');
+        error => {
+          console.error('Chat error:', error);
+          setError(error?.message || 'Failed to get AI response');
           setIsStreaming(false);
           setIsLoading(false);
           setStreamingContent('');
         }
       );
     } catch (error) {
-      console.error('Chat Interface Catch Error:', {
-        error: error?.message || error,
-        message: messageText,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent
-      });
-      setError(error?.message || error?.toString() || 'Failed to send message');
+      console.error('Chat send error:', error);
+      setError(error?.message || 'Failed to send message');
       setIsStreaming(false);
       setIsLoading(false);
       setStreamingContent('');
     }
   };
 
-  const handleClearChat = async () => {
-    if (!activeConversationId) return;
-
-    try {
-      setMessages([]);
-      setError(null);
-    } catch (error) {
-      setError('Failed to clear chat history');
-    }
-  };
-
-  // const generateDummyResponse = (messageText) => {
-  //   const responses = {
-  //     'hi': 'Hello! This is a dummy response for testing purposes. The API is currently disconnected.',
-  //     'hello': 'Hi there! This is a test response since the server is not available.',
-  //     'test': 'Testing successful! This dummy response confirms the chat interface is working.',
-  //     'help': 'This is a dummy help response. Available commands: hi, hello, test, help, report',
-  //     'report': 'Generating dummy report...'
-  //   };
-
-  //   const lowerMessage = messageText.toLowerCase().trim();
-
-  //   if (lowerMessage.includes('report')) {
-  //     return {
-  //       response: "Dummy Report Generated Successfully\n\nThis is a test report with sample data for development purposes.\n\nTotal Records: 25\nProcessing Time: 0.5 seconds\nStatus: Complete",
-  //       table: {
-  //         title: "Sample Test Data",
-  //         columns: ["ID", "Name", "Status", "Amount", "Date"],
-  //         rows: [
-  //           { "ID": 1, "Name": "Test Item 1", "Status": "Active", "Amount": 100.50, "Date": "2024-01-15" },
-  //           { "ID": 2, "Name": "Test Item 2", "Status": "Pending", "Amount": 250.00, "Date": "2024-01-16" },
-  //           { "ID": 3, "Name": "Test Item 3", "Status": "Complete", "Amount": 75.25, "Date": "2024-01-17" }
-  //         ]
-  //       }
-  //     };
-  //   }
-
-  //   return {
-  //     response: responses[lowerMessage] || `You said: "${messageText}". This is a dummy response for testing when API is disconnected.`
-  //   };
-  // };
+  const handleClearChat = () => setMessages([]);
 
   const getStatusColor = () => {
     switch (connectionStatus) {
@@ -323,21 +219,20 @@ const ChatInterface = ({
   const getConversationTitle = () => {
     if (pendingNewChat && !currentConversation) return 'New Chat';
     if (!currentConversation) return 'No Conversation';
-
     if (currentConversation.title) return currentConversation.title;
 
-    if (currentConversation.messages && currentConversation.messages.length > 0) {
-      const firstUserMessage = currentConversation.messages.find(msg => msg.role === 'user');
-      if (firstUserMessage) {
-        const content = firstUserMessage.content;
-        return content.length > 40 ? content.substring(0, 40) + '...' : content;
-      }
+    const firstUserMessage = currentConversation.messages?.find(msg => msg.role === 'user');
+    const firstContent = firstUserMessage?.content || '';
+    if (firstContent) {
+      return firstContent.length > 40
+        ? firstContent.substring(0, 40) + '...'
+        : firstContent;
     }
 
-    return `Chat ${currentConversation.id.substring(5, 13)}`;
+    return `Chat ${currentConversation.id?.substring(5, 13) || ''}`;
   };
 
-  const showWelcomeInterface = (activeConversationId || pendingNewChat) && messages.length === 0;
+  const showWelcomeInterface = (currentConversation || pendingNewChat) && (messages?.length || 0) === 0;
 
   return (
     <div className="chat-interface">
@@ -345,24 +240,16 @@ const ChatInterface = ({
         <div className="header-content">
           <div className="conversation-info">
             <h1>{getConversationTitle()}</h1>
-            {currentConversation && (
-              <span className="conversation-meta">
-                {messages.length} messages • {new Date(currentConversation.created).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-          <div className="connection-status">
-            <div
-              className="status-indicator"
-              style={{ backgroundColor: getStatusColor() }}
-            />
-            <span className="status-text">
-              {connectionStatus === 'connected' ? 'Connected' :
-                connectionStatus === 'disconnected' ? 'Disconnected' : 'Checking...'}
+            <span className='conversation-info-span'>
+              {currentConversation ? new Date(currentConversation.created).toLocaleDateString() : ''}
             </span>
           </div>
+          <div className="connection-status">
+            <div className="status-indicator" style={{ backgroundColor: getStatusColor() }} />
+            <span className="status-text">{connectionStatus === 'connected' ? 'Connected' : connectionStatus === 'disconnected' ? 'Disconnected' : 'Checking...'}</span>
+          </div>
         </div>
-        <div>
+        <div className="header-actions">
           {connectionStatus === 'connected' && (
             <button
               className="disconnect-button"
@@ -373,7 +260,6 @@ const ChatInterface = ({
                 setConnectionStatus('disconnected');
                 setError(null);
               }}
-              style={{ marginLeft: 8 }}
               aria-label="Disconnect assistant"
               title="Disconnect"
             >
@@ -383,7 +269,7 @@ const ChatInterface = ({
           <button
             className="clear-button"
             onClick={handleClearChat}
-            disabled={messages.length === 0}
+            disabled={(messages?.length || 0) === 0}
           >
             Clear Chat
           </button>
@@ -397,23 +283,11 @@ const ChatInterface = ({
         </div>
       )}
 
-      {!activeConversationId && !pendingNewChat && (
-        <div className="no-conversation">
-          <div className="no-conversation-content">
-            <IoChatboxOutline className="no-conversation-icon" />
-            <h2>No conversation selected</h2>
-            <p>Select a conversation from the sidebar or create a new one to start chatting.</p>
-          </div>
-        </div>
-      )}
-
       {showWelcomeInterface && (
         <div className="welcome-interface">
           <div className="welcome-content">
             <div className="welcome-header">
-              <div className="welcome-icon">
-                <IoSparkles />
-              </div>
+              <div className="welcome-icon"><IoSparkles /></div>
               <h2>Welcome to AI Assistant</h2>
               <p>Your intelligent companion for charts, markdown, and real-time conversations</p>
             </div>
@@ -423,12 +297,10 @@ const ChatInterface = ({
                 <button
                   key={index}
                   className="starter-card"
-                  onClick={() => handleSuggestionClick(starter.prompt)}
+                  onClick={() => handleSendMessage(starter.prompt)}
                   disabled={isLoading}
                 >
-                  <div className="starter-icon">
-                    {starter.icon}
-                  </div>
+                  <div className="starter-icon">{starter.icon}</div>
                   <div className="starter-content">
                     <h3>{starter.title}</h3>
                     <p>{starter.subtitle}</p>
@@ -455,80 +327,7 @@ const ChatInterface = ({
         </div>
       )}
 
-      {/* ✅ Dummy button to generate mock report */}
-      {/* {showMockButton && (
-        <button onClick={handleGenerateMockApiResponse} style={{ marginTop: "50px", width: "250px", backgroundColor: "blueviolet" }}>
-          Generate API Mock Response
-        </button>
-      )} */}
-
-      {/* Chart Testing Buttons */}
-      {/* {showChartMockButtons && (
-        <div style={{
-          marginTop: "10px",
-          display: "flex",
-          gap: "10px",
-          flexWrap: "wrap",
-          padding: "10px",
-          border: "1px solid #e5e7eb",
-          borderRadius: "8px",
-          // backgroundColor: "#f9fafb"
-        }}>
-          <div style={{ width: "100%", marginBottom: "5px", fontWeight: "bold", fontSize: "14px" }}>
-            Test Chart Types:
-          </div>
-          <button
-            onClick={() => { handleGenerateMockLineChart(); setShowChartMockButtons(false); }}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#4b5563",
-              color: "white",
-              border: "none",
-              borderRadius: "4px"
-            }}
-          >
-            📈 Line Chart
-          </button>
-          <button
-            onClick={() => { handleGenerateMockBarChart(); setShowChartMockButtons(false); }}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#10a37f",
-              color: "white",
-              border: "none",
-              borderRadius: "4px"
-            }}
-          >
-            📊 Bar Chart
-          </button>
-          <button
-            onClick={() => { handleGenerateMockDoughnutChart(); setShowChartMockButtons(false); }}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "4px"
-            }}
-          >
-            🍩 Doughnut Chart
-          </button>
-          <button
-            onClick={() => { handleGenerateMockPieChart(); setShowChartMockButtons(false); }}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#f59e0b",
-              color: "white",
-              border: "none",
-              borderRadius: "4px"
-            }}
-          >
-            🥧 Pie Chart
-          </button>
-        </div>
-      )} */}
-
-      {(activeConversationId || pendingNewChat) && messages.length > 0 && (
+      {(currentConversation || pendingNewChat) && messages.length > 0 && (
         <>
           <div className="messages-container">
             <MessageList
@@ -536,21 +335,14 @@ const ChatInterface = ({
               isStreaming={isStreaming}
               streamingContent={streamingContent}
             />
-            {/* Show loading skeleton when AI is processing */}
-            {(isLoading || isStreaming) && !streamingContent && (
-              <LoadingSkeleton />
-            )}
-
-            {/* Show typing indicator when streaming content */}
-            {isStreaming && streamingContent && (
-              <TypingIndicator />
-            )}
+            {(isLoading || isStreaming) && !streamingContent && <LoadingSkeleton />}
+            {isStreaming && streamingContent && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
         </>
       )}
 
-      {(activeConversationId || pendingNewChat) && (
+      {(currentConversation || pendingNewChat) && (
         <div className="input-container">
           <MessageInput
             onSendMessage={handleSendMessage}

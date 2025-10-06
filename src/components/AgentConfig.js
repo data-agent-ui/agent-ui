@@ -1,11 +1,11 @@
-// components/AgentConfig.jsx
 import React, { useState } from 'react';
 import apiService from '../services/apiService.js';
+import agentService from '../services/agentService.js';
 import './AgentConfig.css';
 
 export default function AgentConfig({ onConnected, onDisconnected, defaultMode = 'http' }) {
     const [mode, setMode] = useState(defaultMode); // 'websocket' | 'http' | 'mcp'
-    const [endpoint, setEndpoint] = useState('http://localhost:5000');
+    const [endpoint, setEndpoint] = useState('http://localhost:3000');
     const [apiKey, setApiKey] = useState('');
     const [model, setModel] = useState('');
     const [enableStreaming, setEnableStreaming] = useState(true);
@@ -16,8 +16,8 @@ export default function AgentConfig({ onConnected, onDisconnected, defaultMode =
         e.preventDefault();
         setStatus('checking');
         try {
-            apiService.configure({ mode, endpoint, apiKey, model, enableStreaming });
-            await apiService.checkHealth();
+            agentService.configure({ mode, endpoint, apiKey, model, enableStreaming });
+            await agentService.checkHealth();
             setStatus('connected');
             onConnected?.();
         } catch (err) {

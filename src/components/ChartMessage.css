@@ -11,7 +11,7 @@
   padding: 1rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   height: 400px;
-  width: 100%;
+  width: 800px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
@@ -37,6 +37,15 @@
   .chart-container {
     height: 300px;
     padding: 0.75rem;
+    width: 100%;
+  }
+}
+
+@media (max-width: 992px) {
+  .chart-container {
+    height: 300px;
+    padding: 0.75rem;
+    width: 100%;
   }
 }
 
